@@ -38,14 +38,22 @@ TEST_CASE("Standalone runtime and renderer link without ReXGlue") {
   REQUIRE(element);
   CHECK(EaseProgress(0.5f, 0, 0) == Catch::Approx(0.5f));
   ImGui::CreateContext();
-  ImDrawList list(ImGui::GetDrawListSharedData());
-  Render(&list, *element, ImVec2(0, 0), 1.0f, 1.0f, RenderResources{});
+  {
+    ImDrawList list(ImGui::GetDrawListSharedData());
+    list._ResetForNewFrame();
+    Render(&list, *element, ImVec2(0, 0), 1.0f, 1.0f, RenderResources{});
+  }
   ImGui::DestroyContext();
 }
 
 TEST_CASE("Standalone keyboard edits within its buffer limit") {
   rex::ui::guide::VirtualKeyboard keyboard(u"ab", 3);
   CHECK(keyboard.KeyAt(1, 0) == u'q');
-  // Layout access and invalid coordinates are independent of a guest runtime.
   CHECK(keyboard.KeyAt(5, 0) == 0);
+  keyboard.MoveCursor(-1);
+  REQUIRE(keyboard.Insert(u'c'));
+  CHECK(keyboard.text() == u"acb");
+  CHECK_FALSE(keyboard.Insert(u'd'));
+  REQUIRE(keyboard.Backspace());
+  CHECK(keyboard.text() == u"ab");
 }

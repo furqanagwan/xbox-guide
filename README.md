@@ -9,7 +9,8 @@ keyboard, notifications and Guide pages. Windows is the current host target.
 
 ## Use in a ReXGlue recomp
 
-ReXGlue pins this repository as `thirdparty/xbox-guide`. Clone the SDK with
+ReXGlue pins this repository as its
+[Guide submodule](https://github.com/furqanagwan/rexglue-sdk/tree/main/thirdparty/xbox-guide). Clone the SDK with
 `--recurse-submodules`, or run `git submodule update --init --recursive`.
 Build and install the SDK as usual. Existing title builds, Guide controls,
 `REXGLUE_SYSTEM_UPDATE`, `REXGLUE_GUIDE_FLASH` and `rexglue guide-bundle` continue

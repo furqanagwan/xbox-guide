@@ -34,4 +34,33 @@ in ReXGlue. Their Guide connections do not move ownership of the underlying
 SDK service. Issue 153 also includes SDK codegen: future changes to generating
 the update executables belong in ReXGlue, with a link to its transferred record.
 
-The completed transfer map and validation results will be recorded below.
+The completed transfer map is below and in [machine-readable form](issue-transfer.json).
+
+## Validation at extraction
+
+Windows x64, Clang 22.1.8 and CMake 4.4.3. Standalone Debug and Release each
+discover and pass one CTest test containing three Catch2 cases and 16 assertions.
+Dependencies use the exact fmt/ImGui/Catch2 revisions pinned by the source SDK;
+the local runs use those source checkouts through FetchContent source overrides.
+No SDK runtime or private assets are linked to the standalone test.
+
+The SDK's current-source Release Guide baseline and extracted-source suite
+both pass 51 cases and 583 assertions, with six private-asset cases skipped
+(57 cases discovered). The title application source compilation target also
+builds. Broader SDK validation is recorded in its extraction document and
+release evidence. The added Windows CI workflow tests dependency fetching on
+a fresh runner; a local source override is not evidence of its result.
+
+Real title/pad interaction has not been repeated for this extraction. The open
+epic retains that gate; no compatibility claims for another SDK are made.
+
+
+| Original SDK issue | Guide issue | State | Comments preserved |
+| --- | --- | --- | --- |
+| [#127](https://github.com/furqanagwan/rexglue-sdk/issues/127) | [#1](https://github.com/furqanagwan/xbox-guide/issues/1) | open | 0 |
+| [#132](https://github.com/furqanagwan/rexglue-sdk/issues/132) | [#2](https://github.com/furqanagwan/xbox-guide/issues/2) | closed | 0 |
+| [#143](https://github.com/furqanagwan/rexglue-sdk/issues/143) | [#3](https://github.com/furqanagwan/xbox-guide/issues/3) | closed | 0 |
+| [#145](https://github.com/furqanagwan/rexglue-sdk/issues/145) | [#4](https://github.com/furqanagwan/xbox-guide/issues/4) | closed | 0 |
+| [#153](https://github.com/furqanagwan/rexglue-sdk/issues/153) | [#5](https://github.com/furqanagwan/xbox-guide/issues/5) | closed | 1 |
+| [#161](https://github.com/furqanagwan/rexglue-sdk/issues/161) | [#6](https://github.com/furqanagwan/xbox-guide/issues/6) | closed | 0 |
+| [#166](https://github.com/furqanagwan/rexglue-sdk/issues/166) | [#7](https://github.com/furqanagwan/xbox-guide/issues/7) | closed | 4 |

@@ -2,7 +2,7 @@
 
 The Xbox 360 guide over a running title, built from the console's own scenes
 ([ADR-011](adr/ADR-011-xbox-guide-from-system-xui.md),
-[RG-GDK-041](https://github.com/furqanagwan/rexglue-sdk/issues/127)).
+[RG-GDK-041](https://github.com/furqanagwan/xbox-guide/issues/1)).
 
 Status: implemented in three parts: format layer, XUI runtime, guide. Checked
 with Quantum of Solace (GDK Release, NVIDIA, 2026-09-30) through scripted
