@@ -49,7 +49,13 @@ both pass 51 cases and 583 assertions, with six private-asset cases skipped
 (57 cases discovered). The title application source compilation target also
 builds. Broader SDK validation is recorded in its extraction document and
 release evidence. The added Windows CI workflow tests dependency fetching on
-a fresh runner; a local source override is not evidence of its result.
+a fresh runner. [CI at 62267d4](https://github.com/furqanagwan/xbox-guide/actions/runs/37526640817)
+passed on a fresh Windows runner, fetching dependencies and building/testing
+both configurations without an SDK checkout.
+
+Original issue labels were restored and verified after transfer. GitHub drops
+custom labels when their definitions do not exist in the destination; the
+missing definitions were copied from the SDK before restoring the labels.
 
 Real title/pad interaction has not been repeated for this extraction. The open
 epic retains that gate; no compatibility claims for another SDK are made.

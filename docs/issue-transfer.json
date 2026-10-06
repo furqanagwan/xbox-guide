@@ -5,7 +5,13 @@
     "old_number": 127,
     "new_number": 1,
     "state": "OPEN",
-    "comments_preserved": 0
+    "comments_preserved": 0,
+    "labels_preserved": [
+      "architecture",
+      "audio",
+      "input",
+      "xam"
+    ]
   },
   {
     "source": "https://github.com/furqanagwan/rexglue-sdk/issues/132",
@@ -13,7 +19,8 @@
     "old_number": 132,
     "new_number": 2,
     "state": "CLOSED",
-    "comments_preserved": 0
+    "comments_preserved": 0,
+    "labels_preserved": []
   },
   {
     "source": "https://github.com/furqanagwan/rexglue-sdk/issues/143",
@@ -21,7 +28,8 @@
     "old_number": 143,
     "new_number": 3,
     "state": "CLOSED",
-    "comments_preserved": 0
+    "comments_preserved": 0,
+    "labels_preserved": []
   },
   {
     "source": "https://github.com/furqanagwan/rexglue-sdk/issues/145",
@@ -29,7 +37,8 @@
     "old_number": 145,
     "new_number": 4,
     "state": "CLOSED",
-    "comments_preserved": 0
+    "comments_preserved": 0,
+    "labels_preserved": []
   },
   {
     "source": "https://github.com/furqanagwan/rexglue-sdk/issues/153",
@@ -37,7 +46,12 @@
     "old_number": 153,
     "new_number": 5,
     "state": "CLOSED",
-    "comments_preserved": 1
+    "comments_preserved": 1,
+    "labels_preserved": [
+      "enhancement",
+      "gdk",
+      "xam"
+    ]
   },
   {
     "source": "https://github.com/furqanagwan/rexglue-sdk/issues/161",
@@ -45,7 +59,11 @@
     "old_number": 161,
     "new_number": 6,
     "state": "CLOSED",
-    "comments_preserved": 0
+    "comments_preserved": 0,
+    "labels_preserved": [
+      "enhancement",
+      "xam"
+    ]
   },
   {
     "source": "https://github.com/furqanagwan/rexglue-sdk/issues/166",
@@ -53,6 +71,10 @@
     "old_number": 166,
     "new_number": 7,
     "state": "CLOSED",
-    "comments_preserved": 4
+    "comments_preserved": 4,
+    "labels_preserved": [
+      "enhancement",
+      "xam"
+    ]
   }
 ]
