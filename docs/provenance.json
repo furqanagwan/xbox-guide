@@ -1,0 +1,25 @@
+{
+  "repository": "https://github.com/furqanagwan/rexglue-sdk",
+  "commit": "d1a87b4ef0a09c7a7813ab2a2b27976de01de203",
+  "date": "2026-10-06",
+  "paths": [
+    "src/ui/guide",
+    "src/ui/xui",
+    "include/rex/ui/guide",
+    "include/rex/ui/xui",
+    "tests/unit/ui/xui_format_test.cpp",
+    "tests/unit/ui/xui_runtime_test.cpp",
+    "tests/unit/ui/xui_test_data.h",
+    "tests/unit/ui/xtt_font_test.cpp",
+    "tests/unit/ui/guide_font_test.cpp",
+    "tests/unit/ui/guide_input_test.cpp",
+    "tests/unit/ui/virtual_keyboard_test.cpp",
+    "tests/unit/ui/dlc_catalog_test.cpp",
+    "tests/unit/ui/title_update_test.cpp"
+  ],
+  "license": "BSD-3-Clause",
+  "changes": [
+    "Separate ResolveFile into the ReXGlue integration; preserve runtime semantics"
+  ],
+  "assets": "No system update, game, font, image or sound assets included"
+}
