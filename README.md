@@ -46,6 +46,15 @@ are not part of `xbox_guide::core`. A host may supply its own extracted scenes
 and resource callbacks to the scene layer. No asset extraction is needed for
 the synthetic tests.
 
+The standalone target also provides `guide::MessageBoxScene` for console
+message-box visuals supplied by the host. Pass a skin-backed `SceneContext`,
+title/body and choice labels; choose an explicit safe initial selection.
+The model owns its context, supports focus/disabled actions and exposes the
+scene for the existing renderer. Keep the skin document alive until the model
+is destroyed. It returns unavailable when required controls are absent so a
+host can use its fallback UI. Host file picking, I/O, service actions and
+shutdown remain the caller's responsibility.
+
 ## Build the standalone scene layer
 
 From a Windows x64 developer shell with Clang, CMake and Ninja:

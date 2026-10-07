@@ -12,6 +12,7 @@ function(xbox_guide_attach_rexglue target)
         guide/guide_dlc.cpp
         guide/guide_storage.cpp
         guide/guide_input.cpp
+        guide/message_box.cpp
         guide/guide_layout.cpp
         guide/guide_title_update.cpp
         guide/title_update.cpp
@@ -37,7 +38,7 @@ endfunction()
 
 function(xbox_guide_attach_tests target)
     set(sources
-        xui_format_test.cpp xui_runtime_test.cpp xtt_font_test.cpp
+        message_box_test.cpp xui_format_test.cpp xui_runtime_test.cpp xtt_font_test.cpp
         guide_font_test.cpp guide_input_test.cpp virtual_keyboard_test.cpp
         dlc_catalog_test.cpp title_update_test.cpp)
     list(TRANSFORM sources PREPEND "${XBOX_GUIDE_SOURCE_DIR}/tests/unit/ui/")
