@@ -341,6 +341,7 @@ void XboxGuide::ApplyTitleUpdateChoice() {
 void XboxGuide::OpenActiveDownloads() {
   SettingsPage& page = PushPage(assets_->options_notifications, "Active Downloads");
   downloads_scene_ = page.scene;
+  PrepareActiveDownloadsScene(*downloads_scene_);
   download_rows_.clear();
   page.on_focus = [this] { FillActiveDownloads(); };
   page.on_select = [this](xui::Element* row) {
@@ -427,12 +428,6 @@ void XboxGuide::FillActiveDownloads() {
       download_rows_[i]->Set("NavDown", xui::Value{i + 1 < download_rows_.size()
                                                        ? std::string(download_rows_[i + 1]->id())
                                                        : std::string()});
-    }
-    for (std::string_view id : {"chkShow", "chkSound", "chkShowMovies", "chkShowIPTV",
-                                "labelSoundDisabled", "XuiLabel2"}) {
-      if (xui::Element* e = scene->FindById(id)) {
-        e->Suppress();
-      }
     }
     if (!download_rows_.empty()) {
       SetFocus(download_rows_[std::min(focused, download_rows_.size() - 1)], /*initial=*/true);

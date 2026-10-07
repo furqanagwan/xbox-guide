@@ -11,6 +11,9 @@ struct GuideActivity {
   std::string details;
   std::function<void()> cancel;
 };
+// Prepare the reused console template even when there are no activity rows.
+void PrepareActiveDownloadsScene(xui::Element& root);
+
 class ActiveDownloadsScene {
  public:
   ActiveDownloadsScene(const ActiveDownloadsScene&) = delete;

@@ -14,7 +14,9 @@ ReXGlue pins this repository as its
 `--recurse-submodules`, or run `git submodule update --init --recursive`.
 Build and install the SDK as usual. Existing title builds, Guide controls,
 `REXGLUE_SYSTEM_UPDATE`, `REXGLUE_GUIDE_FLASH` and `rexglue guide-bundle` continue
-to work. The SDK installs these headers with its runtime.
+to work. Xbox 360 is now the explicit default presentation; BC Flash assets
+are used only by a host selecting `GUIDE_PRESENTATION original-xbox`.
+The SDK installs these headers with its runtime.
 
 See the [Guide behavior and asset workflow](docs/xbox-guide.md).
 
@@ -82,3 +84,17 @@ content and codegen issues remain in ReXGlue. See [migration](docs/extraction.md
 [source provenance](docs/provenance.json) and [original source history](docs/source-history.txt).
 Existing console/title observations predate extraction; they do not establish
 compatibility with another SDK. The owner pad play session remains pending.
+
+## Explicit presentation validation, 2026-10-07
+
+The full adapter no longer automatically selects emulator scenes when they are
+available. Hosts choose Xbox 360 or Original Xbox presentation explicitly.
+Private tests cover both scenes and both source/recovery message-box skins;
+shared Active Downloads preparation removes notification controls even for an
+initial empty activity list. The full SDK's final offline targeted suite passes
+49 cases in each standard/GDK Debug/Release configuration (826 assertions in
+Release, 824 in Debug). Standalone Debug/Release each pass five cases and 48
+assertions. A disposable Quantum of Solace run on NVIDIA verified the original
+Guide, achievements and corrected empty Active Downloads page with software
+keyboard input. Original Xbox painted/controller/game execution and full
+Microsoft service fidelity are not validated.

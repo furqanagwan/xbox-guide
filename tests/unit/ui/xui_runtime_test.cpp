@@ -546,7 +546,8 @@ TEST_CASE("The backward-compatibility guide has its own three tabs", "[xui][guid
   auto modules = SystemUpdate::ReadModules(std::filesystem::path(path), &error);
   REQUIRE(modules);
   auto assets =
-      rex::ui::guide::GuideAssets::FromUpdate(SystemUpdate::FromModules(*modules, &error), &error);
+      rex::ui::guide::GuideAssets::FromUpdate(SystemUpdate::FromModules(*modules, &error), &error,
+                                              rex::ui::guide::GuidePresentation::OriginalXbox);
   REQUIRE(assets);
   CHECK(assets->emulator_layout);
   CHECK(assets->has_xbox_settings);
@@ -578,6 +579,38 @@ TEST_CASE("The backward-compatibility guide has its own three tabs", "[xui][guid
   play("2To1");
   CHECK(opacity("Tab1") == Approx(1.0f));
   CHECK_FALSE(root->FindById("Tab4"));
+}
+
+TEST_CASE("Title presentation never changes with available Guide scenes",
+          "[xui][guide][guide_presentation][local]") {
+  using rex::ui::guide::GuideAssets;
+  using rex::ui::guide::GuidePresentation;
+  const char* console = std::getenv("REXGLUE_SYSTEM_UPDATE");
+  const char* flash = std::getenv("REXGLUE_GUIDE_FLASH");
+  if (!console || !*console || !flash || !*flash) {
+    SKIP("Both console system update and BC Flash assets are required");
+  }
+  std::string error;
+  auto original = GuideAssets::Load(console, &error);
+  INFO(error);
+  REQUIRE(original);
+  CHECK_FALSE(original->emulator_layout);
+  auto explicit_console = GuideAssets::Load(console, &error, GuidePresentation::Xbox360);
+  REQUIRE(explicit_console);
+  CHECK_FALSE(explicit_console->emulator_layout);
+  CHECK_FALSE(GuideAssets::Load(console, &error, GuidePresentation::OriginalXbox));
+  CHECK(error.find("Original Xbox Guide requires") != std::string::npos);
+  auto bc = GuideAssets::Load(flash, &error, GuidePresentation::OriginalXbox);
+  REQUIRE(bc);
+  CHECK(bc->emulator_layout);
+  // A BC-only HUD may lack the ordinary scenes. Never substitute its emulator
+  // scenes when a 360 host loads it through the default API.
+  auto default_bc = GuideAssets::Load(flash, &error);
+  if (default_bc) {
+    CHECK_FALSE(default_bc->emulator_layout);
+  } else {
+    CHECK_FALSE(error.empty());
+  }
 }
 
 TEST_CASE("Text taller than its box scrolls, holds and fades back to the top", "[xui]") {

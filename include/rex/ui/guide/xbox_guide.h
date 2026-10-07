@@ -77,6 +77,10 @@ std::span<const uint8_t> EmbeddedGuide();
 
 /// The scenes and strings the guide uses, parsed once from the owner's system
 /// update.
+/// The title host chooses presentation; asset availability never chooses it.
+/// OriginalXbox selects BC scenes, not an original Xbox execution backend.
+enum class GuidePresentation { Xbox360, OriginalXbox };
+
 struct GuideAssets {
   std::unique_ptr<xui::SystemUpdate> update;
   xui::Document skin;      // huduiskin: control visuals, message boxes
@@ -102,12 +106,16 @@ struct GuideAssets {
   bool has_keyboard = false;
   std::vector<std::string> hud_strings, xam_strings, profile_strings;
 
-  static std::unique_ptr<GuideAssets> Load(const std::filesystem::path& path, std::string* error);
+  static std::unique_ptr<GuideAssets> Load(
+      const std::filesystem::path& path, std::string* error,
+      GuidePresentation presentation = GuidePresentation::Xbox360);
   /// From a guide bundle (see EmbeddedGuide).
-  static std::unique_ptr<GuideAssets> LoadBundle(std::span<const uint8_t> bundle,
-                                                 std::string* error);
-  static std::unique_ptr<GuideAssets> FromUpdate(std::unique_ptr<xui::SystemUpdate> update,
-                                                 std::string* error);
+  static std::unique_ptr<GuideAssets> LoadBundle(
+      std::span<const uint8_t> bundle, std::string* error,
+      GuidePresentation presentation = GuidePresentation::Xbox360);
+  static std::unique_ptr<GuideAssets> FromUpdate(
+      std::unique_ptr<xui::SystemUpdate> update, std::string* error,
+      GuidePresentation presentation = GuidePresentation::Xbox360);
 };
 
 /// The first string in `strings` starting with `prefix` (tables are per
