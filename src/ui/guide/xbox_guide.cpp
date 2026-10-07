@@ -473,18 +473,21 @@ std::span<const uint8_t> EmbeddedGuide() {
 }
 
 std::unique_ptr<GuideAssets> GuideAssets::Load(const std::filesystem::path& path,
-                                               std::string* error) {
-  return FromUpdate(xui::SystemUpdate::Load(path, error), error);
+                                               std::string* error, GuidePresentation presentation) {
+  return FromUpdate(xui::SystemUpdate::Load(path, error), error, presentation);
 }
 
 std::unique_ptr<GuideAssets> GuideAssets::LoadBundle(std::span<const uint8_t> bundle,
-                                                     std::string* error) {
+                                                     std::string* error,
+                                                     GuidePresentation presentation) {
   auto modules = xui::SystemUpdate::ReadBundle(bundle, error);
-  return modules ? FromUpdate(xui::SystemUpdate::FromModules(*modules, error), error) : nullptr;
+  return modules ? FromUpdate(xui::SystemUpdate::FromModules(*modules, error), error, presentation)
+                 : nullptr;
 }
 
 std::unique_ptr<GuideAssets> GuideAssets::FromUpdate(std::unique_ptr<xui::SystemUpdate> update,
-                                                     std::string* error) {
+                                                     std::string* error,
+                                                     GuidePresentation presentation) {
   if (!update) {
     return nullptr;
   }
@@ -515,16 +518,20 @@ std::unique_ptr<GuideAssets> GuideAssets::FromUpdate(std::unique_ptr<xui::System
       !scene(assets->backdrop, "xam/xam", "hudbkgnd.xur")) {
     return nullptr;
   }
-  // The backward-compatibility guide when the HUD has it. Its Home tab for a
-  // profile without Xbox Live is HomeTabEmulatorSignedInLocal: Leave Game and
-  // Manage Storage.
-  assets->emulator_layout =
-      scene(assets->main, "hud/hud", "GuideMainEmulator.xur") &&
-      (scene(assets->home_tab, "hud/hud", "HomeTabEmulatorSignedInLocal.xur") ||
-       scene(assets->home_tab, "hud/hud", "HomeTabEmulatorSignedIn.xur")) &&
-      scene(assets->games_tab, "hud/hud", "GamesTabEmulatorSignedIn.xur") &&
-      scene(assets->settings_tab, "hud/hud", "SettingsTabEmulatorSignedIn.xur");
-  if (!assets->emulator_layout) {
+  // A BC asset folder must not silently replace a 360 title's Guide.
+  assets->emulator_layout = presentation == GuidePresentation::OriginalXbox;
+  if (assets->emulator_layout) {
+    if (!scene(assets->main, "hud/hud", "GuideMainEmulator.xur") ||
+        !(scene(assets->home_tab, "hud/hud", "HomeTabEmulatorSignedInLocal.xur") ||
+          scene(assets->home_tab, "hud/hud", "HomeTabEmulatorSignedIn.xur")) ||
+        !scene(assets->games_tab, "hud/hud", "GamesTabEmulatorSignedIn.xur") ||
+        !scene(assets->settings_tab, "hud/hud", "SettingsTabEmulatorSignedIn.xur")) {
+      if (error) {
+        *error = "Original Xbox Guide requires backward-compatibility emulator scenes: " + *error;
+      }
+      return nullptr;
+    }
+  } else {
     if (!scene(assets->main, "hud/hud", "GuideMain.xur") ||
         !scene(assets->home_tab, "hud/hud", "HomeTabSignedIn.xur") ||
         !scene(assets->games_tab, "hud/hud", "GamesTabSignedIn.xur") ||

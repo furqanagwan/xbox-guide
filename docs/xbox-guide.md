@@ -25,13 +25,17 @@ keyboard runs. An owner play session with a pad is still to do.
   the rexglue CLI changes, so a newer SDK takes what it needs. Nothing from the update ships with the SDK. Note that
   a title built this way carries those console files; anyone passing the
   executable on passes them on.
-- `REXGLUE_GUIDE_FLASH` (optional, RG-GDK-061) names an Xbox PC
-  backward-compatibility game's `Content/Flash` folder (its `hud.xex`,
-  `huduiskin.xex`, `xam.xex` and `xenonjklatin.xtt`). Its newer modules and
-  the console font are taken ahead of the update's; `gamerprofile` and the
-  update's own fonts still come from `REXGLUE_SYSTEM_UPDATE`.
-  `rexglue guide-bundle <flash> <$SystemUpdate> -o <bundle>` does the same by
-  hand: each module or font comes from the first source that has it.
+- Xbox 360 presentation is the default. The SDK target helper accepts
+  `GUIDE_PRESENTATION xbox360` or `GUIDE_PRESENTATION original-xbox`.
+  Xbox 360 builds use the console update even if `REXGLUE_GUIDE_FLASH` is set.
+  Original Xbox presentation requires that Flash path, takes its BC modules
+  ahead of supplementary console resources, and requires the emulator scenes.
+  The full adapter accepts `GuidePresentation::Xbox360` (default) or
+  `GuidePresentation::OriginalXbox` on `GuideAssets::Load`, `LoadBundle` and
+  `FromUpdate`. It never automatically chooses presentation from available scenes.
+  A BC presentation does not implement original Xbox execution or Xbox services.
+  `rexglue guide-bundle <flash> <$SystemUpdate> -o <bundle>` still combines sources
+  explicitly; the consuming host controls which scenes it loads.
 - A build without `REXGLUE_SYSTEM_UPDATE` logs "Xbox guide not built in" and,
   at run time, falls back to the `xbox_guide_system_update` cvar, `$SystemUpdate`
   beside the executable, then `%LOCALAPPDATA%\ReXGlue\$SystemUpdate`. Naming

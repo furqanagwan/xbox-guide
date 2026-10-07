@@ -1,20 +1,26 @@
 // Copyright (c) 2026 Xbox Guide contributors. BSD 3-Clause License; see LICENSE.
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <cstdlib>
 #include <rex/ui/guide/message_box.h>
 #include <rex/ui/guide/xbox_guide.h>
 #include <rex/ui/xui/system_update.h>
 
-TEST_CASE("The private backward-compatibility skin hosts source and recovery message boxes",
+TEST_CASE("Both private Guide skins host source and recovery message boxes",
           "[guide][message_box][local]") {
-  const char* path = std::getenv("REXGLUE_GUIDE_FLASH");
+  const bool original_xbox = GENERATE(false, true);
+  const char* asset_variable = original_xbox ? "REXGLUE_GUIDE_FLASH" : "REXGLUE_SYSTEM_UPDATE";
+  const char* path = std::getenv(asset_variable);
+  INFO(asset_variable);
   if (!path || !*path)
-    SKIP("REXGLUE_GUIDE_FLASH is not set");
+    SKIP("Selected private Guide assets are not set");
   std::string error;
   auto modules = rex::ui::xui::SystemUpdate::ReadModules(std::filesystem::path(path), &error);
   REQUIRE(modules);
   auto assets = rex::ui::guide::GuideAssets::FromUpdate(
-      rex::ui::xui::SystemUpdate::FromModules(*modules, &error), &error);
+      rex::ui::xui::SystemUpdate::FromModules(*modules, &error), &error,
+      original_xbox ? rex::ui::guide::GuidePresentation::OriginalXbox
+                    : rex::ui::guide::GuidePresentation::Xbox360);
   REQUIRE(assets);
   rex::ui::xui::SceneContext context;
   context.skin = &assets->skin;
@@ -37,6 +43,15 @@ TEST_CASE("The private backward-compatibility skin hosts source and recovery mes
   auto downloads =
       rex::ui::guide::ActiveDownloadsScene::Create(assets->options_notifications, context);
   REQUIRE(downloads);
+  downloads->Update({});
+  CHECK(downloads->size() == 0);
+  // Initial zero rows must still remove the notification page's controls.
+  for (const char* id :
+       {"chkShow", "chkSound", "chkShowMovies", "chkShowIPTV", "labelSoundDisabled", "XuiLabel2"}) {
+    if (auto* control = downloads->root().FindById(id))
+      CHECK_FALSE(control->visible());
+  }
+  CHECK(downloads->root().FindById("XuiLabel1")->text() == "Nothing is downloading.");
   int cancelled = 0;
   downloads->Update({{"Game source extraction", "50%", "Copying", [&] { ++cancelled; }}});
   REQUIRE(downloads->size() == 1);

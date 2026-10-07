@@ -2,6 +2,15 @@
 #include <rex/ui/guide/active_downloads.h>
 
 namespace rex::ui::guide {
+void PrepareActiveDownloadsScene(xui::Element& root) {
+  if (auto* heading = root.FindById("labelHeading"))
+    heading->SetText("Active Downloads");
+  for (const auto* id :
+       {"chkShow", "chkSound", "chkShowMovies", "chkShowIPTV", "labelSoundDisabled", "XuiLabel2"})
+    if (auto* element = root.FindById(id))
+      element->Suppress();
+}
+
 std::unique_ptr<ActiveDownloadsScene> ActiveDownloadsScene::Create(
     const xui::Document& document, const xui::SceneContext& context) {
   auto model = std::unique_ptr<ActiveDownloadsScene>(new ActiveDownloadsScene);
@@ -9,12 +18,7 @@ std::unique_ptr<ActiveDownloadsScene> ActiveDownloadsScene::Create(
   model->root_ = xui::Element::Create(document.root, model->context_);
   if (!model->root_ || !model->root_->FindById("chkShow"))
     return nullptr;
-  if (auto* heading = model->root_->FindById("labelHeading"))
-    heading->SetText("Active Downloads");
-  for (const auto* id :
-       {"chkShow", "chkSound", "chkShowMovies", "chkShowIPTV", "labelSoundDisabled", "XuiLabel2"})
-    if (auto* element = model->root_->FindById(id))
-      element->Suppress();
+  PrepareActiveDownloadsScene(*model->root_);
   return model;
 }
 void ActiveDownloadsScene::Update(std::vector<GuideActivity> activities) {
