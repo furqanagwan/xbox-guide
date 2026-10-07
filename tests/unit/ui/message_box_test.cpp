@@ -34,4 +34,16 @@ TEST_CASE("The private backward-compatibility skin hosts source and recovery mes
   REQUIRE(recovery);
   CHECK(recovery->Activate() == 1);
   CHECK_FALSE(recovery->root().FindById("Button2")->visible());
+  auto downloads =
+      rex::ui::guide::ActiveDownloadsScene::Create(assets->options_notifications, context);
+  REQUIRE(downloads);
+  int cancelled = 0;
+  downloads->Update({{"Game source extraction", "50%", "Copying", [&] { ++cancelled; }}});
+  REQUIRE(downloads->size() == 1);
+  CHECK(downloads->row(0)->secondary_text() == "50%");
+  downloads->Activate();
+  CHECK(cancelled == 1);
+  downloads->Update({{"Game source extraction", "Completed", "Copied to PC", {}}});
+  downloads->Activate();
+  CHECK(cancelled == 1);
 }

@@ -7,6 +7,7 @@
 #include <imgui_internal.h>
 #include <rex/ui/guide/virtual_keyboard.h>
 #include <rex/ui/guide/message_box.h>
+#include <rex/ui/guide/active_downloads.h>
 #include <rex/ui/xui/document.h>
 #include <rex/ui/xui/package.h>
 #include <rex/ui/xui/renderer.h>
@@ -93,6 +94,8 @@ TEST_CASE("Standalone console message boxes retain choices, safe defaults and di
   CHECK(box->root().package().empty());  // owns its context
   CHECK(box->focused_choice() == 2);
   CHECK(box->Activate() == 2);
+  box->Focus(99);
+  CHECK(box->focused_choice() == 2);
   box->Move(1);
   CHECK(box->Activate() == 0);
   box->SetEnabled(0, false);
@@ -113,4 +116,47 @@ TEST_CASE("Standalone console message boxes retain choices, safe defaults and di
   skin.root.children[0].children[0].children.erase(
       skin.root.children[0].children[0].children.begin());
   CHECK_FALSE(rex::ui::guide::MessageBoxScene::Create(context, "", "", choices));
+}
+
+TEST_CASE("Standalone Active Downloads reports host work and only cancels running items") {
+  auto node = [](const char* cls, const char* id) {
+    Node n;
+    n.class_name = cls;
+    n.cls = FindClass(cls);
+    auto props = std::make_shared<PropertyBag>();
+    for (const auto* c : ClassChain(n.cls))
+      for (const auto& def : c->props)
+        if (def.name == "Id")
+          props->entries.push_back({&def, Value{std::string(id)}});
+    n.props = props;
+    return n;
+  };
+  Document page;
+  page.root = node("XuiScene", "downloads");
+  page.root.children.push_back(node("XuiCheckbox", "chkShow"));
+  page.root.children.push_back(node("XuiText", "XuiLabel1"));
+  page.root.children.push_back(node("XuiText", "labelHeading"));
+  SceneContext context;
+  auto model = rex::ui::guide::ActiveDownloadsScene::Create(page, context);
+  REQUIRE(model);
+  int cancelled = 0;
+  model->Update({{"Extraction", "50%", "Copying game files", [&] { ++cancelled; }}});
+  REQUIRE(model->size() == 1);
+  CHECK(std::string(model->row(0)->text()) == "Extraction");
+  CHECK(model->row(0)->secondary_text() == "50%");
+  CHECK_FALSE(model->root().FindById("chkShow")->visible());
+  model->Activate();
+  CHECK(cancelled == 1);
+  model->Update({{"Extraction", "Completed", "Game files copied", {}}});
+  model->Activate();
+  CHECK(cancelled == 1);
+  model->Update({});
+  CHECK(model->size() == 0);
+  CHECK(model->row(0) == nullptr);
+  model->Focus(99);
+  model->Activate();
+  CHECK(cancelled == 1);
+  model.reset();
+  page.root.children.clear();
+  CHECK_FALSE(rex::ui::guide::ActiveDownloadsScene::Create(page, context));
 }

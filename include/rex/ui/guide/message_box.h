@@ -11,6 +11,10 @@ namespace rex::ui::guide {
 // input, sounds and actions. Creation fails if the skin lacks the required controls.
 class MessageBoxScene {
  public:
+  MessageBoxScene(const MessageBoxScene&) = delete;
+  MessageBoxScene& operator=(const MessageBoxScene&) = delete;
+  MessageBoxScene(MessageBoxScene&&) = delete;
+  MessageBoxScene& operator=(MessageBoxScene&&) = delete;
   static std::unique_ptr<MessageBoxScene> Create(const xui::SceneContext& context,
                                                  std::string title, std::string body,
                                                  std::span<const std::string> choices,
@@ -18,12 +22,14 @@ class MessageBoxScene {
                                                  std::string_view visual = "XuiMessageBox3");
   xui::Element& root() { return *root_; }
   void Move(int direction);
+  void Focus(size_t choice);
   void SetEnabled(size_t choice, bool enabled);
   void SetBody(std::string body);
   std::optional<size_t> Activate();
   size_t focused_choice() const { return focused_; }
 
  private:
+  MessageBoxScene() = default;
   xui::SceneContext context_;
   std::unique_ptr<xui::Element> root_;
   std::vector<xui::Element*> choices_;

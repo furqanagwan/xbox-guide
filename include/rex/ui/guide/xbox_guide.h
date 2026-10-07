@@ -25,6 +25,7 @@
 #include <rex/cvar.h>
 #include <rex/image_info.h>
 #include <rex/ui/guide/code_patch_states.h>
+#include <rex/ui/guide/active_downloads.h>
 #include <rex/system/achievement_store.h>
 #include <rex/ui/guide/guide_input.h>
 #include <rex/ui/imgui_dialog.h>
@@ -186,6 +187,8 @@ struct GuideHost {
   int display_scale = 1;
   /// Writes changed settings to the title's config file.
   std::function<void()> save_settings;
+  /// Host copy/install jobs, newest first; read only on the UI thread.
+  std::function<std::vector<GuideActivity>()> activities;
   /// After the guide has closed; `exit_title` when the owner confirmed Xbox
   /// Home.
   std::function<void(bool exit_title)> on_closed;
@@ -375,6 +378,7 @@ class XboxGuide final : public ImGuiDialog {
   std::vector<xui::Element*> update_rows_;
   xui::Element* downloads_scene_ = nullptr;
   std::vector<xui::Element*> download_rows_;
+  std::vector<GuideActivity> download_items_;
   // The right pane's banner: an XuiImage the Options scene does not have.
   std::unique_ptr<xui::Node> dlc_banner_node_;
   xui::Element* dlc_banner_ = nullptr;

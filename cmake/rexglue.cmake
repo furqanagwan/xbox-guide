@@ -12,6 +12,7 @@ function(xbox_guide_attach_rexglue target)
         guide/guide_dlc.cpp
         guide/guide_storage.cpp
         guide/guide_input.cpp
+        guide/active_downloads.cpp
         guide/message_box.cpp
         guide/guide_layout.cpp
         guide/guide_title_update.cpp

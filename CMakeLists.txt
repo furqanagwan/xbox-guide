@@ -17,6 +17,7 @@ if(XBOX_GUIDE_BUILD_CORE)
         src/ui/xui/xur_reader.cpp
         src/ui/xui/runtime.cpp
         src/ui/xui/renderer.cpp
+        src/ui/guide/active_downloads.cpp
         src/ui/guide/message_box.cpp
         src/ui/guide/guide_layout.cpp
         src/ui/guide/virtual_keyboard.cpp

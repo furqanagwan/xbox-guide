@@ -52,8 +52,11 @@ title/body and choice labels; choose an explicit safe initial selection.
 The model owns its context, supports focus/disabled actions and exposes the
 scene for the existing renderer. Keep the skin document alive until the model
 is destroyed. It returns unavailable when required controls are absent so a
-host can use its fallback UI. Host file picking, I/O, service actions and
-shutdown remain the caller's responsibility.
+host can use its fallback UI. `guide::ActiveDownloadsScene` displays immutable host activity snapshots and
+invokes a supplied nonblocking cancel callback. The complete Guide also accepts
+these activities through `GuideHost::activities`, alongside title-update jobs.
+Host file picking, I/O, service actions and shutdown remain the caller's responsibility.
+See [host UI contracts and validation](docs/host-ui.md).
 
 ## Build the standalone scene layer
 

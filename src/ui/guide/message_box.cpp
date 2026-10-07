@@ -25,10 +25,12 @@ std::unique_ptr<MessageBoxScene> MessageBoxScene::Create(const xui::SceneContext
     return nullptr;
   for (size_t i = 0; i < choices.size(); ++i) {
     auto* button = box->root_->FindById(fmt::format("Button{}", i));
-    if (!button || !button->focusable())
+    if (!button)
+      return nullptr;
+    button->SetVisible(true);
+    if (!button->focusable())
       return nullptr;
     button->SetText(choices[i]);
-    button->SetVisible(true);
     box->choices_.push_back(button);
   }
   for (size_t i = choices.size(); i < 4; ++i)
@@ -54,8 +56,13 @@ void MessageBoxScene::Move(int direction) {
   if (!direction)
     return;
   const auto next = (focused_ + (direction > 0 ? 1 : choices_.size() - 1)) % choices_.size();
-  xui::Element::MoveFocus(choices_[focused_], choices_[next]);
-  focused_ = next;
+  Focus(next);
+}
+void MessageBoxScene::Focus(size_t choice) {
+  if (choice >= choices_.size() || choice == focused_)
+    return;
+  xui::Element::MoveFocus(choices_[focused_], choices_[choice]);
+  focused_ = choice;
 }
 std::optional<size_t> MessageBoxScene::Activate() {
   auto* choice = choices_[focused_];
