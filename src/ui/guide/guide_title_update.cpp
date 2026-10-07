@@ -344,16 +344,10 @@ void XboxGuide::OpenActiveDownloads() {
   download_rows_.clear();
   page.on_focus = [this] { FillActiveDownloads(); };
   page.on_select = [this](xui::Element* row) {
-    // A on a running download cancels it.
-    const auto jobs = TitleUpdateJobs();
     const auto at = std::find(download_rows_.begin(), download_rows_.end(), row);
     const size_t index = size_t(at - download_rows_.begin());
-    if (at != download_rows_.end() && index < jobs.size()) {
-      auto& job = jobs[jobs.size() - 1 - index];
-      if (job->state.load() == TitleUpdateJob::State::kRunning && !job->from_file) {
-        job->cancel = true;
-      }
-    }
+    if (index < download_items_.size() && download_items_[index].cancel)
+      download_items_[index].cancel();
   };
   FillActiveDownloads();
 }
@@ -361,13 +355,53 @@ void XboxGuide::OpenActiveDownloads() {
 void XboxGuide::FillActiveDownloads() {
   xui::Element* scene = downloads_scene_;
   xui::Element* model = scene ? scene->FindById("chkShow") : nullptr;
-  if (!model) {
+  if (!model)
     return;
-  }
-  // Newest first.
   auto jobs = TitleUpdateJobs();
   std::reverse(jobs.begin(), jobs.end());
-  const size_t rows = std::min(jobs.size(), kMaxRows);
+  download_items_.clear();
+  for (const auto& job : jobs) {
+    GuideActivity item;
+    item.title = fmt::format("Title Update {}", job->update.version);
+    item.details = fmt::format("{}\r\n{}", item.title,
+                               job->from_file ? "From a file on this PC" : "From the internet");
+    // Acquire the terminal state before reading non-atomic error strings.
+    const auto state = job->state.load();
+    const uint64_t done = job->done.load(), total = job->total.load();
+    switch (state) {
+      case TitleUpdateJob::State::kRunning:
+        item.status =
+            job->from_file ? "Installing"
+            : total
+                ? fmt::format("{}%", unsigned(std::min(100.0, double(done) / double(total) * 100)))
+                : "Downloading";
+        if (!job->from_file)
+          item.cancel = [job] { job->cancel = true; };
+        break;
+      case TitleUpdateJob::State::kInstalled:
+        item.status = "Installed";
+        break;
+      case TitleUpdateJob::State::kFailed:
+        item.status = "Failed";
+        break;
+      case TitleUpdateJob::State::kCancelled:
+        item.status = "Cancelled";
+        break;
+    }
+    if (total)
+      item.details += fmt::format("\r\n{} of {}", Megabytes(done), Megabytes(total));
+    if (state != TitleUpdateJob::State::kRunning && !job->errors.empty())
+      item.details += "\r\n\r\n" + Joined(job->errors);
+    if (state == TitleUpdateJob::State::kInstalled)
+      item.details += "\r\n\r\nTurn it on in Title Updates.";
+    download_items_.push_back(std::move(item));
+  }
+  if (host_.activities) {
+    auto activities = host_.activities();
+    download_items_.insert(download_items_.end(), std::make_move_iterator(activities.begin()),
+                           std::make_move_iterator(activities.end()));
+  }
+  const size_t rows = std::min(download_items_.size(), kMaxRows);
   if (download_rows_.size() != rows) {
     const size_t focused = size_t(std::find(download_rows_.begin(), download_rows_.end(), focus_) -
                                   download_rows_.begin());
@@ -404,66 +438,25 @@ void XboxGuide::FillActiveDownloads() {
       SetFocus(download_rows_[std::min(focused, download_rows_.size() - 1)], /*initial=*/true);
     }
   }
-  std::string details;
+  std::string details = "Nothing is downloading. Choose game-source extraction or a title update.";
   for (size_t i = 0; i < rows; ++i) {
-    const auto& job = jobs[i];
-    std::string state;
-    switch (job->state.load()) {
-      case TitleUpdateJob::State::kRunning: {
-        const uint64_t total = job->total.load();
-        state = job->from_file ? "Installing"
-                : total        ? fmt::format("{}%", job->done.load() * 100 / total)
-                               : "Downloading";
-        break;
-      }
-      case TitleUpdateJob::State::kInstalled:
-        state = "Installed";
-        break;
-      case TitleUpdateJob::State::kFailed:
-        state = "Failed";
-        break;
-      case TitleUpdateJob::State::kCancelled:
-        state = "Cancelled";
-        break;
-    }
-    download_rows_[i]->SetText(fmt::format("Title Update {}", job->update.version));
-    download_rows_[i]->SetSecondaryText(std::move(state));
-    if (download_rows_[i] == focus_) {
-      const uint64_t done = job->done.load(), total = job->total.load();
-      details = fmt::format("Title Update {}\r\n{}", job->update.version,
-                            job->from_file ? "From a file on this PC" : "From the internet");
-      if (total) {
-        details += fmt::format("\r\n{} of {}", Megabytes(done), Megabytes(total));
-      }
-      if (!job->errors.empty() && job->state.load() != TitleUpdateJob::State::kRunning) {
-        details += "\r\n\r\n" + Joined(job->errors);
-      }
-      if (job->state.load() == TitleUpdateJob::State::kInstalled) {
-        details += "\r\n\r\nTurn it on in Title Updates.";
-      }
-    }
+    download_rows_[i]->SetText(download_items_[i].title);
+    download_rows_[i]->SetSecondaryText(download_items_[i].status);
+    if (download_rows_[i] == focus_)
+      details = download_items_[i].details;
   }
-  if (download_rows_.empty()) {
-    details =
-        "Nothing is downloading. Title updates are downloaded from Games & Apps > Title "
-        "Updates.";
-  }
-  if (xui::Element* e = scene->FindById("XuiLabel1")) {
-    e->SetText(std::move(details));
-  }
-  const bool cancellable = [&] {
-    const auto at = std::find(download_rows_.begin(), download_rows_.end(), focus_);
-    const size_t index = size_t(at - download_rows_.begin());
-    return at != download_rows_.end() && index < jobs.size() &&
-           jobs[index]->state.load() == TitleUpdateJob::State::kRunning && !jobs[index]->from_file;
-  }();
+  if (auto* label = scene->FindById("XuiLabel1"))
+    label->SetText(std::move(details));
+  const auto focused = std::find(download_rows_.begin(), download_rows_.end(), focus_);
+  const size_t index = size_t(focused - download_rows_.begin());
+  const bool cancellable = focused != download_rows_.end() && index < download_items_.size() &&
+                           bool(download_items_[index].cancel);
   SetLegends(cancellable ? "Cancel" : "", scene->GetString("LegendB"), "");
 }
 
 void XboxGuide::PollActiveDownloads() {
-  if (downloads_scene_ && !pages_.empty() && pages_.back().scene == downloads_scene_) {
+  if (downloads_scene_ && !pages_.empty() && pages_.back().scene == downloads_scene_)
     FillActiveDownloads();
-  }
 }
 
 }  // namespace rex::ui::guide
