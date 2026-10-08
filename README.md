@@ -55,7 +55,10 @@ The model owns its context, supports focus/disabled actions and exposes the
 scene for the existing renderer. Keep the skin document alive until the model
 is destroyed. It returns unavailable when required controls are absent so a
 host can use its fallback UI. `guide::ActiveDownloadsScene` displays immutable host activity snapshots and
-invokes a supplied nonblocking cancel callback. The complete Guide also accepts
+invokes a supplied nonblocking cancel callback. `guide::GuideListPage` hosts a
+scrolling list with a details pane in the Guide's full-height HUD frame, as the
+Guide's Manage Storage page looks, and `guide::GuideFileBrowser` fills one
+with drives, folders and files to pick from. The complete Guide also accepts
 these activities through `GuideHost::activities`, alongside title-update jobs.
 Host file picking, I/O, service actions and shutdown remain the caller's responsibility.
 See [host UI contracts and validation](docs/host-ui.md).

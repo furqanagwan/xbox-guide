@@ -3,11 +3,15 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <filesystem>
+#include <fstream>
+
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <rex/ui/guide/virtual_keyboard.h>
 #include <rex/ui/guide/message_box.h>
 #include <rex/ui/guide/active_downloads.h>
+#include <rex/ui/guide/file_browser.h>
 #include <rex/ui/xui/document.h>
 #include <rex/ui/xui/package.h>
 #include <rex/ui/xui/renderer.h>
@@ -159,4 +163,61 @@ TEST_CASE("Standalone Active Downloads reports host work and only cancels runnin
   model.reset();
   page.root.children.clear();
   CHECK_FALSE(rex::ui::guide::ActiveDownloadsScene::Create(page, context));
+}
+
+TEST_CASE("Standalone Guide file browser lists drives, folders and matching files") {
+  namespace fs = std::filesystem;
+  using rex::ui::guide::GuideFileBrowser;
+  const fs::path root = fs::temp_directory_path() / "xbox-guide-file-browser-test";
+  fs::remove_all(root);
+  fs::create_directories(root / "Games" / "Halo");
+  fs::create_directories(root / "alpha");
+  for (const char* name : {"Game.ISO", "notes.txt", "b.iso"})
+    std::ofstream(root / "Games" / name) << std::string(2048, 'x');
+
+  GuideFileBrowser iso(GuideFileBrowser::Pick::kFile, {L".iso"});
+  iso.list_drives = [&] { return std::vector<fs::path>{root}; };
+  iso.Open({});
+  REQUIRE(iso.rows().size() == 1);
+  CHECK(iso.rows()[0].secondary == "Drive");
+  CHECK(iso.Select(0).kind == GuideFileBrowser::Result::Kind::kOpened);
+  CHECK(iso.folder() == root);
+  // Folders first, case-insensitively sorted; no files at this level.
+  REQUIRE(iso.rows().size() == 2);
+  CHECK(iso.rows()[0].text == "alpha");
+  CHECK(iso.rows()[1].text == "Games");
+  CHECK(iso.Select(1).kind == GuideFileBrowser::Result::Kind::kOpened);
+  REQUIRE(iso.rows().size() == 3);  // Halo, b.iso, Game.ISO; notes.txt is not listed
+  CHECK(iso.rows()[0].text == "Halo");
+  CHECK(iso.rows()[1].text == "b.iso");
+  CHECK(iso.rows()[2].text == "Game.ISO");
+  CHECK(iso.rows()[2].secondary == "2 KB");
+  const auto full_path = (root / "Games" / "Game.ISO").u8string();
+  CHECK(iso.rows()[2].details == std::string(full_path.begin(), full_path.end()));
+  const auto chosen = iso.Select(2);
+  CHECK(chosen.kind == GuideFileBrowser::Result::Kind::kChosen);
+  CHECK(chosen.path == root / "Games" / "Game.ISO");
+  // B goes up a level with focus on the folder it came from.
+  CHECK(iso.Up());
+  CHECK(iso.folder() == root);
+  CHECK(iso.focus() == 1);
+  iso.Open(root / "Games" / "Halo");
+  CHECK(iso.rows().empty());
+  CHECK(iso.empty_details().find("no matching files") != std::string::npos);
+
+  GuideFileBrowser folder(GuideFileBrowser::Pick::kFolder);
+  folder.Open(root / "Games");
+  REQUIRE(folder.rows().size() == 2);  // Use This Folder, Halo
+  CHECK(folder.rows()[0].text == "Use This Folder");
+  CHECK(folder.Select(0).path == root / "Games");
+  CHECK(folder.Select(1).kind == GuideFileBrowser::Result::Kind::kOpened);
+  CHECK(folder.folder() == root / "Games" / "Halo");
+  fs::remove_all(root);
+}
+
+TEST_CASE("Standalone Guide sizes read as the Guide shows them") {
+  CHECK(rex::ui::guide::FormatGuideSize(1) == "1 KB");
+  CHECK(rex::ui::guide::FormatGuideSize(5u * 1024 * 1024) == "5.0 MB");
+  CHECK(rex::ui::guide::FormatGuideSize(uint64_t(7) * 1024 * 1024 * 1024 + 300u * 1024 * 1024) ==
+        "7.3 GB");
 }
