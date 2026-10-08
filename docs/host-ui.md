@@ -1,7 +1,7 @@
 # Host message boxes and activities
 
-The standalone scene target supplies `MessageBoxScene` and
-`ActiveDownloadsScene` without a ReXGlue runtime. A host supplies a legally
+The standalone scene target supplies `MessageBoxScene`,
+`ActiveDownloadsScene`, `GuideListPage` and `GuideFileBrowser` without a ReXGlue runtime. A host supplies a legally
 obtained skin/options document, resources and sound/input callbacks. No
 Microsoft assets ship here. Keep documents alive until their models are
 destroyed. Models own their contexts and cannot be moved by value, so retained
@@ -23,8 +23,26 @@ snapshots on the UI thread, alongside title-update jobs. It uses the displayed
 snapshot for selection, and reads terminal job state before non-atomic error
 strings to avoid racing a title-update worker.
 
-ReXGlue uses these models for checked first-run source choices, media recovery
-and copy progress. SDK source validation and file I/O remain outside this repo.
+`GuideListPage` is a Guide page outside the running guide: the HUD frame
+(`GuideAssets::backdrop`) opened full height with `ClosedToFull`, hosting the
+Options scene (`options_notifications`) as a list, as Manage Storage looks in
+the in-game Guide. Rows are `btn_Count` clones with left text, right-aligned
+secondary text and per-row details for the right pane. Eleven rows show at a
+time; `Move` scrolls the window and stops at the ends, and the A/B legends are
+set per page. Draw `root()` centred on the 852x480 canvas. The host hides the
+legend letters (`HideGuideButtonLetters`) when it draws the glyphs itself.
+
+`GuideFileBrowser` supplies a list page's rows for browsing the PC: drives,
+then folders and files matching the host's extensions (hidden and system
+entries left out, folders first, sizes on the right, full paths in the
+details). A opens a folder or chooses a file, or the open folder in folder
+mode; B goes up a level with focus on where it came from, then reports the
+drives' level so the host can leave. It only lists and navigates; the host
+checks what is chosen.
+
+ReXGlue uses these models for checked first-run source choices and browsing
+(`GuideListPage`, `GuideFileBrowser`), media recovery (`MessageBoxScene`) and
+copy progress. SDK source validation and file I/O remain outside this repo.
 The SDK records copy completion history for the in-game Guide. Painted
 interactive/controller/title/media-removal checks remain pending.
 
