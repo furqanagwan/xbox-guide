@@ -219,7 +219,7 @@ class XboxGuide final : public ImGuiDialog {
 
  private:
   enum class Screen { kMain, kAchievements, kAchievementDetail, kConfirm, kSettings };
-  enum class Confirm { kXboxHome, kTurnOff, kTitleUpdate, kDeleteSave };
+  enum class Confirm { kXboxHome, kTurnOff, kTitleUpdate, kDeleteSave, kGameUpdate, kGameRollBack };
 
   void Handle(GuideAction action);
   void HandleMain(GuideAction action);
@@ -256,6 +256,7 @@ class XboxGuide final : public ImGuiDialog {
     std::function<void()> on_focus;  // after focus moves on the page
     std::function<void(xui::Element*, int)> on_adjust;
     std::function<void(xui::Element*)> on_x;  // X on the focused control
+    std::function<void()> on_y;
   };
   SettingsPage& PushPage(const xui::Document& scene, std::string heading);
   void PopPage();
@@ -319,6 +320,11 @@ class XboxGuide final : public ImGuiDialog {
   void SelectTitleUpdate(const PPCTitleUpdate& update);
   void ChooseTitleUpdateFile(const PPCTitleUpdate& update);
   void ApplyTitleUpdateChoice();
+  void OpenGameUpdate();
+  void PollGameUpdate();
+  void ShowGameUpdate();
+  void SelectGameUpdate();
+  void ApplyGameUpdateChoice();
   // Games & Apps > Active Downloads: title update downloads and installs.
   void OpenActiveDownloads();
   void FillActiveDownloads();
@@ -383,6 +389,8 @@ class XboxGuide final : public ImGuiDialog {
   std::shared_ptr<std::atomic<bool>> title_update_pick_;        // set when the pick is done
   uint32_t title_update_pick_version_ = 0;
   xui::Element* updates_scene_ = nullptr;
+  xui::Element* game_update_scene_ = nullptr;
+  xui::Element* game_update_row_ = nullptr;
   std::vector<xui::Element*> update_rows_;
   xui::Element* downloads_scene_ = nullptr;
   std::vector<xui::Element*> download_rows_;
