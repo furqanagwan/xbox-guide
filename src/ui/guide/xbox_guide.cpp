@@ -30,6 +30,7 @@
 #include <rex/ui/image_decode.h>
 #include <rex/ui/immediate_drawer.h>
 
+#include <rex/ui/guide/app_update.h>
 #include <rex/ui/guide/dlc_catalog.h>
 #include <rex/ui/guide/guide_layout.h>
 
@@ -827,8 +828,10 @@ void XboxGuide::ConfigureMain() {
                "XuiButtonGuide");
       AddEntry(games, "btnAvatarAwards", "btnManageGame", "btnTitleUpdates", "Title Updates",
                "XuiButtonGuide");
-      AddEntry(games, "btnAvatarAwards", "btnTitleUpdates", "btnActiveDownloads",
-               "Active Downloads", "XuiButtonGuide");
+      AddEntry(games, "btnAvatarAwards", "btnTitleUpdates", "btnGameUpdate", "Game Update",
+               "XuiButtonGuide");
+      AddEntry(games, "btnAvatarAwards", "btnGameUpdate", "btnActiveDownloads", "Active Downloads",
+               "XuiButtonGuide");
     }
   } else if (xui::Element* recent = main_->FindById("btnQuickLaunch")) {
     // Games & Apps gains Manage Game (downloadable content), below
@@ -837,6 +840,7 @@ void XboxGuide::ConfigureMain() {
     // Title Updates below it, a page of its own: updates are not add-ons.
     AddEntry(recent->parent(), "btnQuickLaunch", "btnManageGame", "btnTitleUpdates",
              "Title Updates");
+    AddEntry(recent->parent(), "btnQuickLaunch", "btnTitleUpdates", "btnGameUpdate", "Game Update");
   }
   // Settings gains Patches, Mods and Cheats below the console's settings
   // entry, made from the Preferences entry.
@@ -1082,6 +1086,7 @@ void XboxGuide::OnDraw(ImGuiIO& io) {
   ColourGamerscoreGlyph();
   PollManageGame();
   PollTitleUpdates();
+  PollGameUpdate();
   PollActiveDownloads();
   if (!hud_root_->playing()) {
     for (xui::Element* element : pending_removal_) {
@@ -1220,6 +1225,8 @@ void XboxGuide::Activate(xui::Element* control) {
     OpenManageStorage();
   } else if (id == "btnTitleUpdates") {
     OpenTitleUpdates();
+  } else if (id == "btnGameUpdate") {
+    OpenGameUpdate();
   } else if (id == "btnActiveDownloads") {
     OpenActiveDownloads();
   }
@@ -1481,6 +1488,17 @@ void XboxGuide::OpenConfirm(Confirm confirm) {
                : "The game restarts with the original version. Any unsaved progress will be "
                  "lost.";
   }
+  if (confirm == Confirm::kGameUpdate) {
+    title = fmt::format("Install Version {}", GetAppUpdateState().latest_version);
+    body =
+        "The game closes, installs the update and starts again. Saves and settings stay. Any "
+        "unsaved progress will be lost.";
+  } else if (confirm == Confirm::kGameRollBack) {
+    title = "Use Previous Version";
+    body =
+        "The game closes, goes back to the version before the last update and starts again. "
+        "Saves and settings stay. Any unsaved progress will be lost.";
+  }
   message_->SetText(title);
   auto set_text = [&](std::string_view id, std::string text) {
     if (xui::Element* e = message_->FindById(id)) {
@@ -1536,6 +1554,8 @@ void XboxGuide::HandleConfirm(GuideAction action) {
         if (focus_->id() == "Button0") {
           if (confirm_ == Confirm::kTitleUpdate) {
             ApplyTitleUpdateChoice();
+          } else if (confirm_ == Confirm::kGameUpdate || confirm_ == Confirm::kGameRollBack) {
+            ApplyGameUpdateChoice();
           } else if (confirm_ == Confirm::kDeleteSave) {
             CloseConfirm();
             DeleteChosenSave();

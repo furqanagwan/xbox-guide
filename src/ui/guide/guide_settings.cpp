@@ -161,6 +161,11 @@ void XboxGuide::HandleSettings(GuideAction action) {
         page.on_x(focus_);
       }
       break;
+    case GuideAction::kY:
+      if (page.on_y) {
+        page.on_y();
+      }
+      break;
     default:
       break;
   }
