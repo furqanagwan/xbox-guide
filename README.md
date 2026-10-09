@@ -1,103 +1,61 @@
 # Xbox Guide
 
-The Xbox 360 Guide UI extracted from [ReXGlue](https://github.com/furqanagwan/rexglue-sdk).
-It runs the console's own XUI scenes rather than recreating their appearance.
-BSD-3-Clause; no Microsoft scenes, fonts, images, sounds or game files ship here.
+The Xbox 360 Guide for recompiled games: the menu that opens over a game,
+with achievements, settings, notifications, the keyboard and Leave Game. It
+plays the console's own Guide scenes instead of redrawing them, following how
+Microsoft's Xbox backward compatibility shows the Guide on Xbox on PC and the
+next-generation Xbox (Project Helix) app.
 
-The repository owns the Guide, XUI parser and runtime, ImGui renderer, fonts,
-keyboard, notifications and Guide pages. Windows is the current host target.
+No Microsoft scenes, fonts, images or sounds are included. Each player's build
+reads them from their own console's system update.
 
-## Use in a ReXGlue recomp
+> Status: alpha. Used by [ReXGlue](https://github.com/furqanagwan/rexglue-sdk).
 
-ReXGlue pins this repository as its
-[Guide submodule](https://github.com/furqanagwan/rexglue-sdk/tree/main/thirdparty/xbox-guide). Clone the SDK with
-`--recurse-submodules`, or run `git submodule update --init --recursive`.
-Build and install the SDK as usual. Existing title builds, Guide controls,
-`REXGLUE_SYSTEM_UPDATE`, `REXGLUE_GUIDE_FLASH` and `rexglue guide-bundle` continue
-to work. Xbox 360 is now the explicit default presentation; BC Flash assets
-are used only by a host selecting `GUIDE_PRESENTATION original-xbox`.
-The SDK installs these headers with its runtime.
+## Two parts
 
-See the [Guide behavior and asset workflow](docs/xbox-guide.md).
+| Part | What it is | Depends on |
+| --- | --- | --- |
+| `xbox_guide::core` | Reads and draws Xbox 360 XUI scenes with ImGui | `fmt`, `imgui` |
+| The full Guide | Pages, achievements, notifications, settings | ReXGlue's runtime |
 
-## Use the scene layer in another recomp
+Any recompilation project can use `core`. The full Guide currently needs
+ReXGlue's services.
 
-Supply `fmt::fmt` and `imgui::imgui` targets, then:
+## Use it in ReXGlue
+
+ReXGlue includes this repository as the `thirdparty/xbox-guide` submodule.
+Clone ReXGlue with `--recurse-submodules` and build it as usual. See
+[Guide behavior and assets](docs/xbox-guide.md).
+
+## Use the scene layer in another project
 
 ```cmake
 set(XBOX_GUIDE_BUILD_CORE ON CACHE BOOL "" FORCE)
-set(XBOX_GUIDE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(external/xbox-guide)
-target_link_libraries(my_recomp PRIVATE xbox_guide::core)
+target_link_libraries(my_game PRIVATE xbox_guide::core)
 ```
 
-The scene target has no ReXGlue runtime dependency. It provides XUIZ/XUIS/XUR
-parsing, schema, element trees, timelines, layout helpers, ImGui draw-list
-rendering and keyboard editing. Headers and namespaces retain `rex::ui` to
-preserve compatibility. Parse scenes into `xui::Document`, build an
-`xui::Element` tree, supply textures and fonts with `xui::RenderResources`,
-then call `xui::Render` on the host's ImGui draw list. Match this repository's
-pinned ImGui revision; other revisions are not validated.
+Parse a scene into `xui::Document`, build an `xui::Element` tree, then call
+`xui::Render` on an ImGui draw list. Host-provided pages (message boxes, lists,
+file pickers, downloads) are described in [host UI](docs/host-ui.md).
 
-The complete Guide currently uses the ReXGlue host adapter. Its
-`guide::GuideHost` takes runtime, input, achievement and content services.
-Other SDKs must adapt those services; the complete Guide is not yet a
-framework-neutral drop-in. STFS/XEX/LZX extraction, XTT decoding, XMA playback,
-guest XAM notifications and title-update installs use ReXGlue services and
-are not part of `xbox_guide::core`. A host may supply its own extracted scenes
-and resource callbacks to the scene layer. No asset extraction is needed for
-the synthetic tests.
+## Build and test on its own
 
-The standalone target also provides `guide::MessageBoxScene` for console
-message-box visuals supplied by the host. Pass a skin-backed `SceneContext`,
-title/body and choice labels; choose an explicit safe initial selection.
-The model owns its context, supports focus/disabled actions and exposes the
-scene for the existing renderer. Keep the skin document alive until the model
-is destroyed. It returns unavailable when required controls are absent so a
-host can use its fallback UI. `guide::ActiveDownloadsScene` displays immutable host activity snapshots and
-invokes a supplied nonblocking cancel callback. `guide::GuideListPage` hosts a
-scrolling list with a details pane in the Guide's full-height HUD frame, as the
-Guide's Manage Storage page looks, and `guide::GuideFileBrowser` fills one
-with drives, folders and files to pick from. The complete Guide also accepts
-these activities through `GuideHost::activities`, alongside title-update jobs.
-Host file picking, I/O, service actions and shutdown remain the caller's responsibility.
-See [host UI contracts and validation](docs/host-ui.md).
-
-## Build the standalone scene layer
-
-From a Windows x64 developer shell with Clang, CMake and Ninja:
+From a Visual Studio x64 developer prompt:
 
 ```powershell
 cmake -S . -B out/build -G "Ninja Multi-Config" -DCMAKE_CXX_COMPILER=clang++ -DXBOX_GUIDE_FETCH_DEPENDENCIES=ON
-cmake --build out/build --config Debug
-ctest --test-dir out/build -C Debug --output-on-failure
 cmake --build out/build --config Release
 ctest --test-dir out/build -C Release --output-on-failure
 ```
 
-Fetching is opt-in. Dependency revisions match the extraction's SDK pins.
-The standalone tests check linkage without the SDK, packages, strings,
-malformed input and the keyboard. The larger existing Guide suite lives in
-`tests/unit/ui` and runs through ReXGlue's `unit_tests` target.
+## Contributing
 
-## Ownership and evidence
+Work on a branch and open a pull request; `main` only changes through reviewed
+PRs with a passing build. Guide issues live here; runtime and input issues
+live in ReXGlue. Where the code came from is in
+[provenance](docs/provenance.json).
 
-Guide issues move here with GitHub's native issue transfer. Runtime, input,
-content and codegen issues remain in ReXGlue. See [migration](docs/extraction.md),
-[source provenance](docs/provenance.json) and [original source history](docs/source-history.txt).
-Existing console/title observations predate extraction; they do not establish
-compatibility with another SDK. The owner pad play session remains pending.
+## License
 
-## Explicit presentation validation, 2026-10-07
-
-The full adapter no longer automatically selects emulator scenes when they are
-available. Hosts choose Xbox 360 or Original Xbox presentation explicitly.
-Private tests cover both scenes and both source/recovery message-box skins;
-shared Active Downloads preparation removes notification controls even for an
-initial empty activity list. The full SDK's final offline targeted suite passes
-49 cases in each standard/GDK Debug/Release configuration (826 assertions in
-Release, 824 in Debug). Standalone Debug/Release each pass five cases and 48
-assertions. A disposable Quantum of Solace run on NVIDIA verified the original
-Guide, achievements and corrected empty Active Downloads page with software
-keyboard input. Original Xbox painted/controller/game execution and full
-Microsoft service fidelity are not validated.
+BSD-3-Clause. Not affiliated with or endorsed by Microsoft or Xbox.
