@@ -314,6 +314,60 @@ TEST_CASE("Menu entries are removed and added with the list closed up", "[xui][g
   CHECK(d->Navigate(NavDirection::kDown) == e);
 }
 
+TEST_CASE("A menu taller than its scene scrolls the focused entry into view", "[xui][guide]") {
+  // Five entries 20 tall in a scene 50 tall: two and a half show.
+  Document skin = MakeSkin();
+  std::vector<Node> entries;
+  for (int i = 0; i < 5; ++i) {
+    entries.push_back(Button(std::string(1, char('a' + i)),
+                             {{"Position", Value{Vec3{0.0f, float(i) * 20.0f, 0.0f}}}}));
+  }
+  Document doc;
+  doc.root = MakeNode(
+      "XuiCanvas", {},
+      {MakeNode("XuiScene", {{"Id", Str("scene")}, {"Height", Value{50.0f}}}, std::move(entries))});
+  SceneContext context;
+  context.skin = &skin;
+  auto root = Element::Create(doc.root, context);
+  Element* scene = root->FindById("scene");
+  auto y = [&](std::string_view id) { return scene->FindById(id)->GetVector("Position").y; };
+
+  rex::ui::guide::ScrollMenuTo(scene->FindById("a"));
+  CHECK(scene->GetBool("ClipChildren"));
+  CHECK(y("a") == Approx(0.0f));
+
+  rex::ui::guide::ScrollMenuTo(scene->FindById("c"));
+  CHECK(y("a") == Approx(-20.0f));
+  CHECK(y("c") == Approx(20.0f));
+
+  rex::ui::guide::ScrollMenuTo(scene->FindById("e"));
+  CHECK(y("e") == Approx(20.0f));
+  CHECK(y("a") == Approx(-60.0f));
+
+  rex::ui::guide::ScrollMenuTo(scene->FindById("d"));
+  CHECK(y("e") == Approx(20.0f));
+
+  rex::ui::guide::ScrollMenuTo(scene->FindById("b"));
+  CHECK(y("b") == Approx(0.0f));
+  CHECK(y("a") == Approx(-20.0f));
+}
+
+TEST_CASE("A menu that fits its scene is neither scrolled nor clipped", "[xui][guide]") {
+  Document skin = MakeSkin();
+  Document doc;
+  doc.root = MakeNode(
+      "XuiCanvas", {},
+      {MakeNode("XuiScene", {{"Id", Str("scene")}, {"Height", Value{50.0f}}},
+                {Button("a", {}), Button("b", {{"Position", Value{Vec3{0.0f, 20.0f, 0.0f}}}})})});
+  SceneContext context;
+  context.skin = &skin;
+  auto root = Element::Create(doc.root, context);
+  Element* scene = root->FindById("scene");
+  rex::ui::guide::ScrollMenuTo(scene->FindById("b"));
+  CHECK_FALSE(scene->GetBool("ClipChildren"));
+  CHECK(scene->FindById("b")->GetVector("Position").y == Approx(20.0f));
+}
+
 TEST_CASE("The XUI ease curve", "[xui]") {
   CHECK(EaseProgress(0.0f, -100, 100) == Approx(0.0f));
   CHECK(EaseProgress(1.0f, -100, 100) == Approx(1.0f));

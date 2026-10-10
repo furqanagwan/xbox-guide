@@ -8,6 +8,7 @@
 
 #include <rex/ui/guide/app_update.h>
 
+#include <algorithm>
 #include <atomic>
 #include <charconv>
 #include <chrono>
@@ -16,6 +17,7 @@
 #include <mutex>
 #include <optional>
 #include <thread>
+#include <vector>
 
 #include <fmt/format.h>
 
@@ -127,7 +129,7 @@ void RunCheck(AppUpdateConfig config, bool use_cache) {
   }
   updater.state.status = AppUpdateStatus::kAvailable;
   updater.state.latest_version = found->release.version.ToString();
-  updater.state.notes = found->release.notes;
+  updater.state.notes = PlainReleaseNotes(found->release.notes);
   updater.state.download_size = found->package.size;
   updater.state.skipped = skipped == updater.state.latest_version;
   REXLOG_INFO("Game update: {} is available (running {})", updater.state.latest_version,
@@ -193,7 +195,94 @@ bool StartHelper(bool rollback, std::string* error) {
                                    error);
 }
 
+std::string_view Trimmed(std::string_view text) {
+  const size_t first = text.find_first_not_of(" \t");
+  if (first == std::string_view::npos) {
+    return {};
+  }
+  return text.substr(first, text.find_last_not_of(" \t") - first + 1);
+}
+
+bool StartsListItem(std::string_view text) {
+  if (text.starts_with("- ") || text.starts_with("* ") || text.starts_with("+ ")) {
+    return true;
+  }
+  size_t digits = 0;
+  while (digits < text.size() && text[digits] >= '0' && text[digits] <= '9') {
+    ++digits;
+  }
+  return digits > 0 && text.substr(digits).starts_with(". ");
+}
+
+std::string InlineText(std::string_view text) {
+  std::string plain;
+  for (size_t i = 0; i < text.size(); ++i) {
+    const char c = text[i];
+    if (c == '[') {
+      const size_t middle = text.find("](", i);
+      const size_t end = middle == std::string_view::npos ? middle : text.find(')', middle);
+      if (end != std::string_view::npos) {
+        plain += text.substr(i + 1, middle - i - 1);
+        i = end;
+        continue;
+      }
+    }
+    if (c == '*' || c == '`') {
+      continue;
+    }
+    plain += c;
+  }
+  return plain;
+}
+
 }  // namespace
+
+std::string PlainReleaseNotes(std::string_view markdown) {
+  if (markdown.starts_with("\xEF\xBB\xBF")) {
+    markdown.remove_prefix(3);
+  }
+  std::vector<std::string> lines;
+  bool joins_previous = false;
+  size_t start = 0;
+  while (start <= markdown.size()) {
+    size_t end = markdown.find('\n', start);
+    if (end == std::string_view::npos) {
+      end = markdown.size();
+    }
+    std::string_view text = Trimmed(markdown.substr(start, end - start));
+    start = end + 1;
+    if (text.ends_with('\r')) {
+      text = Trimmed(text.substr(0, text.size() - 1));
+    }
+    if (text.empty()) {
+      if (!lines.empty() && !lines.back().empty()) {
+        lines.emplace_back();
+      }
+      joins_previous = false;
+    } else if (text.starts_with('#')) {
+      lines.push_back(
+          InlineText(Trimmed(text.substr(std::min(text.find_first_not_of('#'), text.size())))));
+      joins_previous = false;
+    } else if (StartsListItem(text)) {
+      const bool bullet = text[0] == '-' || text[0] == '*' || text[0] == '+';
+      lines.push_back(bullet ? "- " + InlineText(Trimmed(text.substr(2))) : InlineText(text));
+      joins_previous = true;
+    } else if (joins_previous) {
+      lines.back() += ' ' + InlineText(text);
+    } else {
+      lines.push_back(InlineText(text));
+      joins_previous = true;
+    }
+  }
+  while (!lines.empty() && lines.back().empty()) {
+    lines.pop_back();
+  }
+  std::string plain;
+  for (const std::string& line : lines) {
+    plain += (plain.empty() ? "" : "\r\n") + line;
+  }
+  return plain;
+}
 
 void ConfigureAppUpdate(const AppUpdateConfig& config) {
   Updater& updater = Instance();

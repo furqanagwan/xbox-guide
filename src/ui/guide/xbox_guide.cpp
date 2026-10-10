@@ -872,7 +872,7 @@ void XboxGuide::ConfigureMain() {
     if (assets_->has_options &&
         (id == "btnPersonalSettings" || id == "btnPatches" || id == "btnMods" ||
          id == "btnCheats" || id == "btnManageGame" || id == "btnTitleUpdates" ||
-         id == "btnActiveDownloads" || id == "btnManageStorage")) {
+         id == "btnGameUpdate" || id == "btnActiveDownloads" || id == "btnManageStorage")) {
       return true;
     }
     if (id == "btnXboxOneXSettings") {
@@ -887,6 +887,9 @@ void XboxGuide::ConfigureMain() {
       e->Play("NormalDisable");
     }
   });
+  for (xui::Element* tab : tab_scenes_) {
+    ScrollMenuTo(tab ? FirstFocusable(tab) : nullptr);
+  }
   // Achievements shows the gamerscore earned, beside the visual's own
   // gamerscore glyph (drawn as xui::kGamerscoreImage).
   if (xui::Element* button = main_->FindById("btnAchievements"); button && host_.achievements) {
@@ -1005,6 +1008,15 @@ void XboxGuide::SetFocus(xui::Element* control, bool initial) {
   }
   xui::Element::MoveFocus(focus_, control, initial);
   focus_ = control;
+  if (IsTabMenuEntry(control)) {
+    ScrollMenuTo(control);
+  }
+}
+
+bool XboxGuide::IsTabMenuEntry(const xui::Element* control) const {
+  const xui::Element* menu = control->parent();
+  return menu && std::find(std::begin(tab_scenes_), std::end(tab_scenes_), menu->parent()) !=
+                     std::end(tab_scenes_);
 }
 
 void XboxGuide::Dismiss() {
