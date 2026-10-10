@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <string>
 #include <string_view>
 
@@ -101,6 +102,45 @@ inline xui::Element* AddEntry(xui::Element* scene, std::string_view model, std::
     next->Set("NavUp", xui::Value{id});
   }
   return entry;
+}
+
+/// Scrolls the menu holding `entry` by whole entries until `entry` lies inside
+/// the menu scene's height. A menu with entries past that height is clipped to
+/// it, so the entries scrolled out of view are not drawn over the blade.
+inline void ScrollMenuTo(xui::Element* entry) {
+  xui::Element* menu = entry ? entry->parent() : nullptr;
+  if (!menu || !menu->IsA("XuiScene")) {
+    return;
+  }
+  const float height = menu->height();
+  bool overflows = false;
+  for (const auto& child : menu->children()) {
+    if (child->IsA("XuiControl") && child->visible() &&
+        child->GetVector("Position").y + child->height() > height + 0.5f) {
+      overflows = true;
+    }
+  }
+  if (overflows) {
+    menu->Set("ClipChildren", xui::Value{true});
+  }
+  const float row = entry->height();
+  const float top = entry->GetVector("Position").y;
+  float shift = 0.0f;
+  if (top < -0.5f) {
+    shift = -top;
+  } else if (row > 0.0f && top + row > height + 0.5f) {
+    shift = -std::ceil((top + row - height) / row) * row;
+  }
+  if (shift == 0.0f) {
+    return;
+  }
+  for (const auto& child : menu->children()) {
+    if (child->IsA("XuiControl") && !child->suppressed()) {
+      xui::Vec3 p = child->GetVector("Position");
+      p.y += shift;
+      child->Set("Position", xui::Value{p});
+    }
+  }
 }
 
 }  // namespace rex::ui::guide

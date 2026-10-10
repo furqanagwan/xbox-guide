@@ -114,6 +114,9 @@ focus, press and sounds come from the skin visuals' named frames.
 - Games & Apps > Active Downloads lists this session's title update
   downloads and installs, newest first, with their progress or result; A on a
   running download cancels it. Downloads carry on when the guide is closed.
+- A tab whose entries no longer fit its scene (Games & Apps has nine with the
+  added entries; its scene is 200 units, seven 28-unit rows) is clipped to the
+  scene and scrolls a row at a time to keep the focused entry in view.
 - Settings > Preferences, Patches, Mods and Cheats open settings pages built
   from the console's own Options scenes (see [Settings pages](#settings-pages)).
 - While the guide is open, the title behind it is darkened to a quarter of its
@@ -294,6 +297,7 @@ the guide acts on it; everything else is shown disabled, as on the console.
 | Games & Apps | Achievements | `802_Achievements` grid, then `828_AchievDetails` | Works |
 | | Manage Game (added) | | Works: the title's add-ons from its catalogue, installed from this PC |
 | | Title Updates (added) | | Works: the title's updates, optional, downloaded and turned on or off |
+| | Game Update (added) | | Works: new releases of the recompiled game, downloaded, checked and installed by its updater |
 | | Awards | `837_AvatarAwards` (avatar awards) | Disabled |
 | | Recent | `QuickLaunch`: Games & Apps, Downloads, All tabs | Disabled |
 | | My Games | dashboard (dash command 23) | Disabled |

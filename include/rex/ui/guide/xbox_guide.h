@@ -234,6 +234,7 @@ class XboxGuide final : public ImGuiDialog {
   void SwitchTab(int direction);
   xui::Element* FirstFocusable(xui::Element* root);
   void SetFocus(xui::Element* control, bool initial = false);
+  bool IsTabMenuEntry(const xui::Element* control) const;
   void SetLegends(std::string_view a, std::string_view b, std::string_view y,
                   std::string_view x = {});
   void ConfigureMain();
