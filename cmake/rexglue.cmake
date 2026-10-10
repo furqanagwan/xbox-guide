@@ -5,6 +5,8 @@ get_filename_component(XBOX_SOURCE_DIR "${XBOX_SOURCE_DIR}" ABSOLUTE)
 set(XBOX_INCLUDE_DIRS
     "${XBOX_SOURCE_DIR}/ui/xui/include"
     "${XBOX_SOURCE_DIR}/ui/guide/include")
+set(XBOX_FUZZ_DIR "${XBOX_SOURCE_DIR}/ui/xui/fuzz")
+set(XBOX_FUZZ_TEST_DATA_DIR "${XBOX_SOURCE_DIR}/ui/xui/tests")
 
 function(xbox_attach_rexglue target)
     if(NOT TARGET ${target} OR NOT DEFINED REXGLUE_ROOT)

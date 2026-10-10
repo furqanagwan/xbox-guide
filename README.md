@@ -54,6 +54,16 @@ cmake --build out/build --config Release
 ctest --test-dir out/build -C Release --output-on-failure
 ```
 
+The XUI readers also have a libFuzzer target, built with AddressSanitizer:
+
+```powershell
+cmake -S . -B out/fuzz -G "Ninja Multi-Config" -DCMAKE_CXX_COMPILER=clang++ -DXBOX_FETCH_DEPENDENCIES=ON -DXBOX_BUILD_TESTS=OFF -DXBOX_BUILD_FUZZERS=ON
+cmake --build out/fuzz --config Release
+ctest --test-dir out/fuzz -C Release --output-on-failure -L fuzz
+```
+
+`xbox.fuzz.xui` runs for `XBOX_FUZZ_SECONDS` (60 by default).
+
 ## Contributing
 
 Work on a branch and open a pull request; `main` only changes through reviewed
