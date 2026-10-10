@@ -22,19 +22,21 @@
 #include <rex/cvar.h>
 #include <rex/logging.h>
 
+#include <rex/ui/guide/device_details.h>
 #include <rex/ui/guide/guide_layout.h>
 
 REXCVAR_DECLARE(bool, vibration);
 REXCVAR_DECLARE(int32_t, audio_volume);
 REXCVAR_DECLARE(bool, audio_mute_minimized);
 REXCVAR_DECLARE(std::string, audio_output_device);
+REXCVAR_DECLARE(int32_t, monitor);
 
 namespace rex::ui::guide {
 namespace {
 
 constexpr int kVolumeStep = 10;
 constexpr float kRowHeight = 28.0f;
-constexpr size_t kMaxAudioOutputRows = 8;
+constexpr size_t kMaxChoiceRows = 8;
 
 // A slider's body shows its value at frames 0..100, and focused at
 // 101..201 (the skin's XuiSlider visual).
@@ -88,6 +90,47 @@ std::vector<std::string> OutputRowNames(const std::vector<audio::AudioOutput>& o
     }
   }
   return names;
+}
+
+// The Voice scene's Play Through radio list (headset, speakers or both) with
+// a row per text, rows past its three copied from its last, below `heading`.
+// Empty when the scene has no such list.
+std::vector<xui::Element*> FillPlayThroughList(xui::Element* scene,
+                                               const std::vector<std::string>& texts,
+                                               std::string heading) {
+  Hide(scene, {"sliderVolume", "sliderDucking", "chkMuteKinect"});
+  xui::Element* group = scene->FindById("radgrpOutputLocation");
+  xui::Element* last = scene->FindById("radbtnPlayBoth");
+  if (!group || !last || texts.empty()) {
+    return {};
+  }
+  constexpr std::string_view kSceneRows[] = {"radbtnPlayHeadset", "radbtnPlayTV", "radbtnPlayBoth"};
+  std::vector<xui::Element*> rows;
+  for (size_t i = 0; i < texts.size(); ++i) {
+    xui::Element* row = i < std::size(kSceneRows)
+                            ? group->FindById(kSceneRows[i])
+                            : group->CloneChild(*last, fmt::format("radbtnChoice{}", i));
+    if (!row) {
+      return {};
+    }
+    row->Set("Position", xui::Value{xui::Vec3{0.0f, float(i) * kRowHeight, 0.0f}});
+    row->SetText(texts[i]);
+    rows.push_back(row);
+  }
+  for (size_t i = texts.size(); i < std::size(kSceneRows); ++i) {
+    Hide(group, {kSceneRows[i]});
+  }
+  for (size_t i = 0; i < rows.size(); ++i) {
+    SetNav(rows[i], i > 0 ? std::string(rows[i - 1]->id()) : "",
+           i + 1 < rows.size() ? std::string(rows[i + 1]->id()) : "");
+  }
+  group->Set("Height", xui::Value{float(rows.size()) * kRowHeight});
+  xui::Element* first = scene->FindById("sliderVolume");
+  const xui::Vec3 at = first ? first->GetVector("Position") : xui::Vec3{0.0f, 72.0f, 0.0f};
+  MoveTo(scene, "LabelSubHeader2", at.y - 6.0f);
+  MoveTo(scene, "radgrpOutputLocation", at.y + 22.0f);
+  SetText(scene, "LabelSubHeader2", std::move(heading));
+  return rows;
 }
 
 // Radio buttons: one checked in the group.
@@ -209,6 +252,10 @@ void XboxGuide::OpenPreferences() {
   if (host_.audio_outputs) {
     AddEntry(scene, "btnVoice", "btnVoice", "btnAudioOutput", "Audio Output");
   }
+  if (host_.displays) {
+    AddEntry(scene, "btnVoice", host_.audio_outputs ? "btnAudioOutput" : "btnVoice", "btnDisplay",
+             "Display");
+  }
   // The render resolution is under Xbox Settings where the guide has it.
   if (!assets_->has_xbox_settings) {
     AddEntry(scene, "btnController", "btnController", "btnResolution", "Resolution");
@@ -221,6 +268,8 @@ void XboxGuide::OpenPreferences() {
       OpenVolume();
     } else if (id == "btnAudioOutput") {
       OpenAudioOutput();
+    } else if (id == "btnDisplay") {
+      OpenDisplay();
     } else if (id == "btnController") {
       OpenVibration();
     } else if (id == "btnResolution") {
@@ -412,14 +461,6 @@ void XboxGuide::OpenResolution() {
 
 void XboxGuide::OpenAudioOutput() {
   xui::Element* scene = PushPage(assets_->options_voice, "Audio Output").scene;
-  // The Voice scene's Play Through list (headset, speakers or both) becomes
-  // the PC's audio outputs.
-  Hide(scene, {"sliderVolume", "sliderDucking", "chkMuteKinect"});
-  xui::Element* group = scene->FindById("radgrpOutputLocation");
-  xui::Element* last = scene->FindById("radbtnPlayBoth");
-  if (!group || !last) {
-    return;
-  }
   struct Choice {
     std::string text;
     std::string device;
@@ -433,20 +474,26 @@ void XboxGuide::OpenAudioOutput() {
       default_name = output.name;
     }
   }
-  constexpr std::string_view kMovesNow =
-      "\r\n\r\nThe game's sound moves there as soon as you choose it.";
+  const audio::AudioOutput* default_output = nullptr;
+  for (const audio::AudioOutput& output : outputs) {
+    if (output.is_default) {
+      default_output = &output;
+    }
+  }
   std::vector<Choice> choices = {
       {"Windows Default", "",
        fmt::format("Windows Default follows the output chosen in Windows' sound settings{}.{}",
-                   default_name.empty() ? "" : ", now " + default_name, kMovesNow)}};
+                   default_name.empty() ? "" : ", now " + default_name,
+                   default_output ? "\r\n\r\n" + DescribeAudioOutput(*default_output) : "")}};
   const std::vector<std::string> names = OutputRowNames(outputs);
   bool current_connected = current.empty();
   for (size_t i = 0; i < outputs.size(); ++i) {
     current_connected = current_connected || outputs[i].id == current;
-    if (choices.size() < kMaxAudioOutputRows) {
+    if (choices.size() < kMaxChoiceRows) {
       choices.push_back(
           {names[i], outputs[i].id,
-           fmt::format("{}{}", outputs[i].name.empty() ? names[i] : outputs[i].name, kMovesNow)});
+           fmt::format("{}\r\n\r\n{}", outputs[i].name.empty() ? names[i] : outputs[i].name,
+                       DescribeAudioOutput(outputs[i]))});
     }
   }
   if (!current_connected) {
@@ -455,32 +502,15 @@ void XboxGuide::OpenAudioOutput() {
                        "the Windows default until it is."});
   }
 
-  constexpr std::string_view kSceneRows[] = {"radbtnPlayHeadset", "radbtnPlayTV", "radbtnPlayBoth"};
-  std::vector<xui::Element*> rows;
-  for (size_t i = 0; i < choices.size(); ++i) {
-    xui::Element* row = i < std::size(kSceneRows)
-                            ? group->FindById(kSceneRows[i])
-                            : group->CloneChild(*last, fmt::format("radbtnOutput{}", i));
-    if (!row) {
-      return;
-    }
-    row->Set("Position", xui::Value{xui::Vec3{0.0f, float(i) * kRowHeight, 0.0f}});
-    row->SetText(choices[i].text);
-    rows.push_back(row);
+  std::vector<std::string> texts;
+  for (const Choice& choice : choices) {
+    texts.push_back(choice.text);
   }
-  for (size_t i = choices.size(); i < std::size(kSceneRows); ++i) {
-    Hide(group, {kSceneRows[i]});
+  const std::vector<xui::Element*> rows = FillPlayThroughList(scene, texts, "Play Through");
+  if (rows.empty()) {
+    return;
   }
-  for (size_t i = 0; i < rows.size(); ++i) {
-    SetNav(rows[i], i > 0 ? std::string(rows[i - 1]->id()) : "",
-           i + 1 < rows.size() ? std::string(rows[i + 1]->id()) : "");
-  }
-  group->Set("Height", xui::Value{float(rows.size()) * kRowHeight});
-  xui::Element* first = scene->FindById("sliderVolume");
-  const xui::Vec3 at = first ? first->GetVector("Position") : xui::Vec3{0.0f, 72.0f, 0.0f};
-  MoveTo(scene, "LabelSubHeader2", at.y - 6.0f);
-  MoveTo(scene, "radgrpOutputLocation", at.y + 22.0f);
-  SetText(scene, "LabelSubHeader2", "Play Through");
+  xui::Element* group = rows.front()->parent();
 
   auto chosen = std::find_if(choices.begin(), choices.end(),
                              [&](const Choice& choice) { return choice.device == current; });
@@ -507,6 +537,55 @@ void XboxGuide::OpenAudioOutput() {
     }
   };
   SetFocus(checked, /*initial=*/true);
+  pages_.back().on_focus();
+}
+
+void XboxGuide::OpenDisplay() {
+  xui::Element* scene = PushPage(assets_->options_voice, "Display").scene;
+  const std::vector<DisplayInfo> displays = host_.displays();
+  std::vector<std::string> texts;
+  for (const DisplayInfo& display : displays) {
+    if (texts.size() < kMaxChoiceRows) {
+      texts.push_back(display.name);
+    }
+  }
+  const std::vector<xui::Element*> rows = FillPlayThroughList(scene, texts, "Play On");
+  if (rows.empty()) {
+    SetText(scene, "LabelSubHeader1", "Windows lists no displays.");
+    return;
+  }
+  xui::Element* group = rows.front()->parent();
+  const int32_t chosen_index = REXCVAR_GET(monitor);
+  size_t chosen = 0;
+  for (size_t i = 0; i < rows.size(); ++i) {
+    if (chosen_index > 0 ? displays[i].monitor_index == chosen_index : displays[i].shows_game) {
+      chosen = i;
+    }
+  }
+  CheckOnly(group, rows[chosen]);
+  pages_.back().on_focus = [this, scene, rows, displays] {
+    const auto row = std::find(rows.begin(), rows.end(), focus_);
+    if (row == rows.end()) {
+      return;
+    }
+    const DisplayInfo& display = displays[size_t(row - rows.begin())];
+    SetText(scene, "LabelSubHeader1",
+            fmt::format("{}\r\n{}", display.name, DescribeDisplay(display)));
+  };
+  pages_.back().on_select = [this, group, rows, displays](xui::Element* control) {
+    const auto row = std::find(rows.begin(), rows.end(), control);
+    if (row == rows.end()) {
+      return;
+    }
+    const DisplayInfo& display = displays[size_t(row - rows.begin())];
+    REXLOG_INFO("Xbox guide: playing on display {} ({})", display.monitor_index, display.name);
+    rex::cvar::SetFlagByName("monitor", std::to_string(display.monitor_index));
+    CheckOnly(group, control);
+    if (host_.save_settings) {
+      host_.save_settings();
+    }
+  };
+  SetFocus(rows[chosen], /*initial=*/true);
   pages_.back().on_focus();
 }
 

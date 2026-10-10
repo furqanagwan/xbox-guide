@@ -28,6 +28,7 @@
 #include <rex/ui/guide/code_patch_states.h>
 #include <rex/ui/guide/active_downloads.h>
 #include <rex/system/achievement_store.h>
+#include <rex/ui/display_info.h>
 #include <rex/ui/guide/guide_input.h>
 #include <rex/ui/imgui_dialog.h>
 #include <rex/ui/overlay/achievement_icon_cache.h>
@@ -197,6 +198,9 @@ struct GuideHost {
   /// The Windows audio outputs the game can play through, for Audio Output
   /// (the audio_output_device setting); null hides the page.
   std::function<std::vector<audio::AudioOutput>()> audio_outputs;
+  /// The displays the game can play on, in the monitor setting's order, for
+  /// Display; null hides the page.
+  std::function<std::vector<DisplayInfo>()> displays;
   /// Writes changed settings to the title's config file.
   std::function<void()> save_settings;
   /// Host copy/install jobs, newest first; read only on the UI thread.
@@ -272,6 +276,7 @@ class XboxGuide final : public ImGuiDialog {
   void OpenNotifications();
   void OpenResolution();
   void OpenAudioOutput();
+  void OpenDisplay();
   /// Settings > Xbox Settings, emulator layout: the render resolution on the
   /// XboxOneXSettings scene's Graphics and Performance choice.
   void OpenXboxSettings();
