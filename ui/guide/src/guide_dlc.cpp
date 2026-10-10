@@ -328,9 +328,7 @@ void XboxGuide::FillManageGame() {
   }
   if (manage_rows_.empty()) {
     if (xui::Element* details = scene->FindById("XuiLabel1")) {
-      details->SetText(
-          "This game has no add-ons listed. Its config lists them as [[dlc]] entries; "
-          "\"rexglue dlc-find <title ID>\" finds them.");
+      details->SetText("There's no downloadable content for this game.");
     }
     SetLegends("", manage_scene_->GetString("LegendB"), "");
     return;
@@ -367,13 +365,10 @@ void XboxGuide::ShowDlc(xui::Element* row) {
     if (entry.installed) {
       status = "Installed. The game may need a restart to use it.";
     } else if (entry.requires_title_update > host_.title_update) {
-      status = fmt::format(
-          "Title update {} needs to be installed before this add-on. Install the title "
-          "update, then this.",
-          entry.requires_title_update);
+      status = fmt::format("Install title update {} first.", entry.requires_title_update);
     } else {
       if (!entry.package.empty()) {
-        status = "Its package is in the DLC folder.";
+        status = "Ready to install.";
       }
       action = "Install";
     }

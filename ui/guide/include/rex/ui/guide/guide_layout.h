@@ -14,6 +14,8 @@
 
 #include <rex/ui/xui/runtime.h>
 
+struct ImFont;
+
 namespace rex::ui::guide {
 
 inline const xui::Node& SceneNode(const xui::Document& document) {
@@ -21,6 +23,8 @@ inline const xui::Node& SceneNode(const xui::Document& document) {
 }
 
 bool UseThreeTabs(xui::Node& guide_main);
+
+void LayOutLegends(xui::Element& backdrop, const xui::Node& backdrop_root, ImFont* font);
 
 inline void RemoveEntry(xui::Element* scene, std::string_view id) {
   xui::Element* entry = scene->FindById(id);

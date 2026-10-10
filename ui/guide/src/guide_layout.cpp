@@ -9,9 +9,15 @@
 #include <rex/ui/guide/guide_layout.h>
 
 #include <algorithm>
+#include <cfloat>
 #include <initializer_list>
 #include <map>
 #include <string>
+#include <utility>
+
+#include <imgui.h>
+
+#include <rex/ui/xui/renderer.h>
 
 namespace rex::ui::guide {
 namespace {
@@ -136,6 +142,43 @@ bool UseThreeTabs(xui::Node& guide_main) {
     }
   }
   return true;
+}
+
+void LayOutLegends(xui::Element& backdrop, const xui::Node& backdrop_root, ImFont* font) {
+  if (!font) {
+    return;
+  }
+  constexpr float kLegendGap = 8.0f;
+  constexpr std::pair<std::string_view, std::string_view> kLegends[] = {
+      {"AButton", "AText"}, {"BButton", "BText"}, {"XButton", "XText"}, {"YButton", "YText"}};
+  auto home = [](const xui::Node* node) {
+    const xui::Value* value = node ? node->Find("Position") : nullptr;
+    const xui::Vec3* position = value ? value->get<xui::Vec3>() : nullptr;
+    return position ? *position : xui::Vec3{};
+  };
+  float end = -FLT_MAX;
+  for (const auto& [button, label] : kLegends) {
+    xui::Element* glyph = backdrop.FindById(button);
+    xui::Element* text = backdrop.FindById(label);
+    const xui::Node* glyph_node = backdrop_root.FindById(button);
+    const xui::Node* text_node = backdrop_root.FindById(label);
+    if (!glyph || !text || !glyph_node || !text_node) {
+      continue;
+    }
+    xui::Vec3 glyph_at = home(glyph_node);
+    xui::Vec3 text_at = home(text_node);
+    const float shift = std::max(0.0f, end - glyph_at.x);
+    glyph_at.x += shift;
+    text_at.x += shift;
+    glyph->Set("Position", xui::Value{glyph_at});
+    text->Set("Position", xui::Value{text_at});
+    const std::string words(text->text());
+    if (!text->visible() || words.empty()) {
+      continue;
+    }
+    const float size = text->GetFloat("PointSize", 14.0f) * xui::kPointToSceneUnits;
+    end = text_at.x + font->CalcTextSizeA(size, FLT_MAX, 0.0f, words.c_str()).x + kLegendGap;
+  }
 }
 
 }

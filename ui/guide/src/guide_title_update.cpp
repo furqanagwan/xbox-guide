@@ -39,14 +39,6 @@ std::string Megabytes(uint64_t bytes) {
   return fmt::format("{:.1f} MB", double(bytes) / (1024.0 * 1024.0));
 }
 
-std::string Joined(const std::vector<std::string>& lines) {
-  std::string out;
-  for (const auto& line : lines) {
-    out += (out.empty() ? "" : "\r\n") + line;
-  }
-  return out;
-}
-
 std::filesystem::path PickPackage(const std::string& title) {
   std::filesystem::path picked;
   const HRESULT init = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -147,9 +139,7 @@ void XboxGuide::FillTitleUpdates() {
   }
   if (update_rows_.empty()) {
     if (xui::Element* details = scene->FindById("XuiLabel1")) {
-      details->SetText(
-          "This game has no title updates listed. Its config lists them as [[title_update]] "
-          "entries.");
+      details->SetText("There are no title updates for this game.");
     }
     SetLegends("", scene->GetString("LegendB"), "");
     return;
@@ -225,7 +215,7 @@ std::string XboxGuide::TitleUpdateAction(const PPCTitleUpdate& update) const {
                             : "Downloading";
   }
   if (!s.built) {
-    return "Not in Build";
+    return "Not Available";
   }
   if (!s.installed) {
     return "Download";
@@ -244,23 +234,22 @@ void XboxGuide::ShowTitleUpdate(const PPCTitleUpdate& update) {
              : total ? fmt::format("Downloading: {} of {}", Megabytes(done), Megabytes(total))
                      : "Downloading...";
   } else if (!s.built) {
-    status = fmt::format(
-        "This build of the game doesn't include title update {}'s executable, so it can't run "
-        "it.",
-        update.version);
+    status = "This title update can't be used with this version of the game.";
   } else if (!s.installed) {
-    status = "Not installed. It's optional: the game runs without it.";
+    status = "Not installed. You don't need it to play.";
     if (s.job && s.job->state.load() == TitleUpdateJob::State::kFailed) {
-      status = fmt::format("It couldn't be {}:\r\n{}",
-                           s.job->from_file ? "installed" : "downloaded", Joined(s.job->errors));
+      status = s.job->from_file
+                   ? "That file isn't a title update for this game."
+                   : "The title update couldn't be downloaded. Check your network connection "
+                     "and try again.";
     }
     action = "Download";
     x_action = "Choose File";
   } else if (s.on) {
-    status = s.running ? "On: the game is running it." : "On after the game restarts.";
+    status = s.running ? "On." : "On the next time the game starts.";
     action = "Turn Off";
   } else {
-    status = s.running ? "Off after the game restarts." : "Installed, and off.";
+    status = s.running ? "Off the next time the game starts." : "Installed. Off.";
     action = "Turn On";
   }
   std::string facts;
@@ -388,8 +377,9 @@ void XboxGuide::FillActiveDownloads() {
     }
     if (total)
       item.details += fmt::format("\r\n{} of {}", Megabytes(done), Megabytes(total));
-    if (state != TitleUpdateJob::State::kRunning && !job->errors.empty())
-      item.details += "\r\n\r\n" + Joined(job->errors);
+    if (state == TitleUpdateJob::State::kFailed)
+      item.details += job->from_file ? "\r\n\r\nThat file isn't a title update for this game."
+                                     : "\r\n\r\nCheck your network connection and try again.";
     if (state == TitleUpdateJob::State::kInstalled)
       item.details += "\r\n\r\nTurn it on in Title Updates.";
     download_items_.push_back(std::move(item));

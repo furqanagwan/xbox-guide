@@ -870,6 +870,7 @@ void XboxGuide::SetLegends(std::string_view a, std::string_view b, std::string_v
   legend("BButton", "BText", b);
   legend("XButton", "XText", x);
   legend("YButton", "YText", y);
+  LayOutLegends(*backdrop_, assets_->backdrop.root, fonts_.regular);
 }
 
 void XboxGuide::ColourGamerscoreGlyph() {

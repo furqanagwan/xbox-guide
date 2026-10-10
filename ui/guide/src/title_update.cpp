@@ -501,6 +501,8 @@ std::shared_ptr<TitleUpdateJob> StartTitleUpdateInstall(const PPCTitleUpdate& up
     job.total = fs::file_size(package_file, ec);
     const std::string why = InstallTitleUpdate(package_file, job.update, title_id, local_dir);
     if (!why.empty()) {
+      REXLOG_WARN("Title update {}: installing {} failed: {}", job.update.version,
+                  path_to_utf8(package_file), why);
       job.errors.push_back(fmt::format("{}: {}", path_to_utf8(package_file.filename()), why));
     }
     job.done = job.total.load();
