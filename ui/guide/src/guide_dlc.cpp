@@ -44,11 +44,8 @@ namespace rex::ui::guide {
 namespace {
 
 constexpr float kRowHeight = 28.0f;
-constexpr size_t kMaxRows = 11;  // the list area of the Options scene
-// The right pane (the scene's graphic_metapane, x 425 to 712 from y 61): the
-// banner (420 x 95 in the catalogue) across the whole pane at its top, edge to
-// edge as the console's marketplace showed it, and the add-on's details below
-// it in the pane's text column to its foot.
+constexpr size_t kMaxRows = 11;
+
 constexpr float kPaneX = 425.0f;
 constexpr float kPaneWidth = 287.0f;
 constexpr float kBannerY = 61.0f;
@@ -62,7 +59,6 @@ bool SameName(std::string_view a, std::string_view b) {
   });
 }
 
-// The Windows file picker, for an add-on's package anywhere on this PC.
 std::vector<std::filesystem::path> PickPackages(const std::string& title) {
   std::vector<std::filesystem::path> picked;
   const HRESULT init = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -102,13 +98,13 @@ std::vector<std::filesystem::path> PickPackages(const std::string& title) {
   return picked;
 }
 
-}  // namespace
+}
 
 struct XboxGuide::DlcJob {
   std::atomic<bool> done{false};
   bool pick = false;
-  std::string entry_id;   // pick: the add-on the package is for
-  std::string file_name;  // install: the package being installed
+  std::string entry_id;
+  std::string file_name;
   X_RESULT result = X_ERROR_SUCCESS;
   std::vector<std::filesystem::path> picked;
 };
@@ -131,8 +127,7 @@ std::vector<XboxGuide::DlcEntry> XboxGuide::FindDlc() const {
     out.push_back(std::move(entry));
   }
   const size_t catalogued = out.size();
-  // An installed or found package belongs to the catalogue entry its display
-  // name matches; otherwise it is listed after them.
+
   auto entry_for = [&](std::string_view display_name) -> DlcEntry* {
     for (size_t i = 0; i < catalogued; ++i) {
       if (SameName(out[i].package_name, display_name) || SameName(out[i].name, display_name)) {
@@ -232,7 +227,7 @@ void XboxGuide::OpenManageGame() {
   page.on_focus = [this] { ShowDlc(focus_); };
   page.on_select = [this](xui::Element* row) {
     if (dlc_job_) {
-      return;  // one install or pick at a time
+      return;
     }
     const auto at = std::find(manage_rows_.begin(), manage_rows_.end(), row);
     if (at == manage_rows_.end() || size_t(at - manage_rows_.begin()) >= dlc_.size()) {
@@ -244,12 +239,11 @@ void XboxGuide::OpenManageGame() {
     }
     if (entry.requires_title_update > host_.title_update) {
       media_->PlaySound("sharedres://btn_InactiveSelect.xma", "");
-      return;  // ShowDlc says why
+      return;
     }
     auto job = std::make_shared<DlcJob>();
     dlc_job_ = job;
     if (entry.package.empty()) {
-      // No package found for it: the player points at one.
       job->pick = true;
       job->entry_id = entry.id;
       const std::string title = fmt::format("Install {}", entry.name);
@@ -274,7 +268,7 @@ void XboxGuide::StartDlcInstall(const DlcEntry& entry) {
   ShowDlc(focus_);
   auto* content = host_.kernel_state->content_manager();
   const std::filesystem::path package = entry.package;
-  // The install outlives the guide if it is closed meanwhile.
+
   std::thread([job, content, package] {
     job->result = content->InstallContent(package);
     job->done = true;
@@ -300,8 +294,7 @@ void XboxGuide::FillManageGame() {
   const size_t rows = std::min(dlc_.size(), kMaxRows);
   for (size_t i = 0; i < rows; ++i) {
     const DlcEntry& entry = dlc_[i];
-    // btn_Count: the name on the left and, where the console had the
-    // price, what A does.
+
     xui::Element* row = scene->CloneChild(*model, fmt::format("btnDlc{}", i), "btn_Count");
     xui::Vec3 p = model->GetVector("Position");
     p.y = top + float(i) * kRowHeight;
@@ -331,7 +324,7 @@ void XboxGuide::FillManageGame() {
     }
   }
   if (xui::Element* status = scene->FindById("XuiLabel2")) {
-    status->Suppress();  // the status is in the details (ShowDlc)
+    status->Suppress();
   }
   if (manage_rows_.empty()) {
     if (xui::Element* details = scene->FindById("XuiLabel1")) {
@@ -342,7 +335,7 @@ void XboxGuide::FillManageGame() {
     SetLegends("", manage_scene_->GetString("LegendB"), "");
     return;
   }
-  SetFocus(manage_rows_.front(), /*initial=*/true);
+  SetFocus(manage_rows_.front(), true);
   ShowDlc(manage_rows_.front());
 }
 
@@ -379,15 +372,13 @@ void XboxGuide::ShowDlc(xui::Element* row) {
           "update, then this.",
           entry.requires_title_update);
     } else {
-      // Install takes the package in the DLC folder, or asks for one.
       if (!entry.package.empty()) {
         status = "Its package is in the DLC folder.";
       }
       action = "Install";
     }
   }
-  // As the console's offer details: title and publisher, then the status in
-  // place of the rating, then the description.
+
   std::string details = entry.name;
   if (!entry.publisher.empty()) {
     details += "\r\n" + entry.publisher;
@@ -409,7 +400,7 @@ void XboxGuide::PollManageGame() {
   const auto job = dlc_job_;
   if (!manage_scene_ || pages_.empty() || pages_.back().scene != manage_scene_) {
     dlc_job_.reset();
-    return;  // the page was left meanwhile
+    return;
   }
   if (job->pick) {
     picked_packages_.insert(picked_packages_.end(), job->picked.begin(), job->picked.end());
@@ -417,7 +408,6 @@ void XboxGuide::PollManageGame() {
     auto it = std::find_if(dlc_.begin(), dlc_.end(),
                            [&](const DlcEntry& e) { return e.id == job->entry_id; });
     if (it != dlc_.end() && !it->installed && !it->package.empty()) {
-      // The package for the add-on chosen: install it now.
       if (size_t(it - dlc_.begin()) < manage_rows_.size()) {
         SetFocus(manage_rows_[size_t(it - dlc_.begin())]);
       }
@@ -454,4 +444,4 @@ void XboxGuide::PollManageGame() {
   dlc_status_.clear();
 }
 
-}  // namespace rex::ui::guide
+}

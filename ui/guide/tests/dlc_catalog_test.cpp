@@ -27,7 +27,7 @@ TEST_CASE("The add-on catalogue reads back what was written", "[guide][dlc]") {
   skyfall.release_date = "2012-11-20";
   skyfall.banner = {0x89, 'P', 'N', 'G', 0, 1, 2};
   skyfall.tile = {0x89, 'P', 'N', 'G'};
-  DlcCatalogEntry ids_only;  // a build without internet
+  DlcCatalogEntry ids_only;
   ids_only.id = "A492C3E9-105C-41DD-9CD8-4977A615655A";
 
   const std::vector<uint8_t> bytes = WriteDlcCatalog({skyfall, ids_only});

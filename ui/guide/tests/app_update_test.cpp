@@ -33,7 +33,7 @@ AppUpdateConfig Config(const TemporaryFolder& folder, std::string version) {
           folder.path / "local", folder.path / "install", folder.path / "install" / "game.exe"};
 }
 
-}  // namespace
+}
 
 TEST_CASE("Game updates are off without a version or a repository", "[guide][app_update]") {
   TemporaryFolder folder;
@@ -43,7 +43,7 @@ TEST_CASE("Game updates are off without a version or a repository", "[guide][app
   no_repository.repository.clear();
   ConfigureAppUpdate(no_repository);
   CHECK(GetAppUpdateState().status == AppUpdateStatus::kOff);
-  CheckForAppUpdate(/*force=*/true);
+  CheckForAppUpdate(true);
   CHECK(GetAppUpdateState().status == AppUpdateStatus::kOff);
 }
 

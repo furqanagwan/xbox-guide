@@ -14,18 +14,6 @@
 
 #include <fmt/format.h>
 
-// Layout (all big-endian):
-//   header: "XUIB", version 8, flags, tool version (u16), file size, section
-//     count (u16)
-//   count header: 12 packed integers (totals; [0] is the object count)
-//   section table: (magic, offset, length) per section
-//   STRN strings, VECT/QUAT/FLOT/COLR value pools, CUST figure paths,
-//   KEYP keyframe values, KEYD keyframes, NAME named frames, DATA the element
-//   tree. Properties, keyframe values and named frames refer into the pools
-//   by index.
-// A packed integer is one byte below 0xF0, 0xFnnn in two bytes, or 0xFF and a
-// 32-bit value.
-
 namespace rex::ui::xui {
 
 const Value* PropertyBag::Find(std::string_view name) const {
@@ -59,7 +47,7 @@ const Node* Node::FindById(std::string_view wanted) const {
 
 namespace {
 
-constexpr uint32_t kMagic = 0x58554942;  // "XUIB"
+constexpr uint32_t kMagic = 0x58554942;
 constexpr uint32_t kVersion = 8;
 constexpr int kMaxDepth = 64;
 
@@ -136,7 +124,7 @@ struct KeyframeRecord {
   Interpolation interpolation;
   int8_t ease_in, ease_out;
   uint8_t ease_scale;
-  uint32_t value_index;  // first KEYP entry
+  uint32_t value_index;
 };
 
 class XurReader {
@@ -195,8 +183,8 @@ std::optional<Document> XurReader::Read(std::span<const uint8_t> bytes, std::str
     Fail(fmt::format("XUR version {} is not supported (only 8)", version));
     return finish();
   }
-  r.U32();  // flags
-  r.U16();  // tool version
+  r.U32();
+  r.U16();
   const uint32_t file_size = r.U32();
   const uint16_t section_count = r.U16();
   uint32_t counts[12];
@@ -207,7 +195,7 @@ std::optional<Document> XurReader::Read(std::span<const uint8_t> bytes, std::str
     Fail("XUR header is truncated");
     return finish();
   }
-  // The section table follows the count header.
+
   struct SectionEntry {
     uint32_t magic, offset, length;
   };
@@ -234,13 +222,12 @@ std::optional<Document> XurReader::Read(std::span<const uint8_t> bytes, std::str
     return {};
   };
 
-  // Pools first: STRN before everything that names strings.
   {
-    strings_.push_back("");  // index 0 is the empty string
+    strings_.push_back("");
     std::span<const uint8_t> strn = section(FourCC("STRN"));
     if (!strn.empty()) {
       ByteReader s(strn);
-      s.U32();  // total length
+      s.U32();
       uint16_t count = s.U16();
       for (uint16_t i = 0; i < count && s.ok(); ++i) {
         std::string str;
@@ -363,7 +350,7 @@ std::optional<Document> XurReader::Read(std::span<const uint8_t> bytes, std::str
     Fail(fmt::format("XUR DATA has {} unread bytes", data_.size() - d.pos()));
     return finish();
   }
-  // Every node is counted; a schema mismatch shows up here first.
+
   if (node_count_ != counts[0]) {
     Fail(fmt::format("XUR declares {} objects but {} were read", counts[0], node_count_));
     return finish();
@@ -394,7 +381,6 @@ bool XurReader::ReadNode(ByteReader& r, Node& node, int depth) {
     node.props = bag;
     shared_bags_.push_back(std::move(bag));
   } else if (flags & 0x8) {
-    // Identical to an earlier element's properties.
     const uint32_t index = r.Packed();
     if (index >= shared_bags_.size()) {
       return Fail("XUR element shares missing properties");
@@ -423,7 +409,7 @@ bool XurReader::ReadNode(ByteReader& r, Node& node, int depth) {
       node.named_frames.assign(named_frames_.begin() + base,
                                named_frames_.begin() + base + frame_count);
     }
-    // Timelines animate descendants, so a leaf has no timeline count.
+
     if (!node.children.empty()) {
       const uint32_t timeline_count = r.Packed();
       if (!r.ok() || timeline_count > data_.size()) {
@@ -471,8 +457,7 @@ bool XurReader::ReadClassProperties(ByteReader& r, const ClassDef* cls, Property
     value_count += list && *list ? uint32_t((*list)->size()) : 1;
     bag.entries.push_back(std::move(entry));
   }
-  // Properties past the schema's end: every non-compound, non-indexed type is
-  // one packed integer (a bool's byte reads the same), so skip them as that.
+
   const uint32_t known = uint32_t(std::min<size_t>(cls->props.size(), 32));
   mask = known >= 32 ? 0 : mask >> known;
   for (; mask; mask >>= 1) {
@@ -530,7 +515,6 @@ bool XurReader::ReadSingleValue(ByteReader& r, const PropDef& def, Value& value)
       break;
     }
     case PropType::kObject: {
-      // A compound value is written once and referred to by index after.
       const uint32_t index = r.Packed();
       if (index < compounds_.size()) {
         value.data = compounds_[index];
@@ -610,8 +594,7 @@ std::shared_ptr<const Path> XurReader::ReadPath(uint32_t offset) {
   if (auto it = paths_.find(offset); it != paths_.end()) {
     return it->second;
   }
-  // Per figure: data length, bounding box, point count, then per point the
-  // anchor and two control points.
+
   ByteReader r(custom_);
   r.Seek(offset);
   r.U32();
@@ -644,8 +627,7 @@ bool XurReader::ReadTimeline(ByteReader& r, const Node& owner, Timeline& timelin
     return Fail("XUR timeline names a missing element");
   }
   timeline.target_id = strings_[id];
-  // Property paths are numbered from the target's own class down to
-  // XuiElement. A target the tree does not hold still has to be read past.
+
   std::vector<const ClassDef*> chain;
   if (const Node* target = owner.FindById(timeline.target_id)) {
     chain = ClassChain(target->cls);
@@ -712,11 +694,11 @@ bool XurReader::ReadTimeline(ByteReader& r, const Node& owner, Timeline& timelin
   return true;
 }
 
-}  // namespace
+}
 
 std::optional<Document> ParseXur(std::span<const uint8_t> bytes, std::string* error) {
   XurReader reader;
   return reader.Read(bytes, error);
 }
 
-}  // namespace rex::ui::xui
+}

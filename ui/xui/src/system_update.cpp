@@ -23,7 +23,7 @@
 namespace rex::ui::xui {
 namespace {
 
-constexpr uint32_t kXex2Magic = 0x58455832;  // "XEX2"
+constexpr uint32_t kXex2Magic = 0x58455832;
 constexpr uint32_t kResourceInfoKey = 0x000002FF;
 constexpr uint32_t kFileFormatKey = 0x000003FF;
 constexpr uint32_t kXuizMagic = 0x5855495A;
@@ -65,7 +65,7 @@ std::optional<std::vector<uint8_t>> ReadStfsFile(rex::filesystem::StfsContainerD
   return bytes;
 }
 
-}  // namespace
+}
 
 std::optional<std::vector<XexResource>> ReadXexResources(std::span<const uint8_t> xex,
                                                          std::string* error) {
@@ -113,10 +113,10 @@ std::optional<std::vector<XexResource>> ReadXexResources(std::span<const uint8_t
   std::vector<uint8_t> image(image_size);
   std::span<const uint8_t> body = xex.subspan(header_size);
   switch (compression) {
-    case 0:  // none
+    case 0:
       std::memcpy(image.data(), body.data(), std::min<size_t>(body.size(), image.size()));
       break;
-    case 1: {  // basic: (data size, zero size) blocks
+    case 1: {
       size_t in = 0, out = 0;
       for (uint32_t at = file_format + 8; at + 8 <= file_format + format_size; at += 8) {
         const uint32_t data_size = Be32(xex, at);
@@ -130,7 +130,7 @@ std::optional<std::vector<XexResource>> ReadXexResources(std::span<const uint8_t
       }
       break;
     }
-    case 2: {  // normal: hashed blocks of LZX chunks
+    case 2: {
       if (format_size < 8 + 4 + 20) {
         return fail("XEX2 LZX header is truncated");
       }
@@ -182,7 +182,7 @@ std::optional<std::vector<XexResource>> ReadXexResources(std::span<const uint8_t
   if (info_size < 4 || uint64_t(resource_info) + info_size > header_size) {
     return fail("XEX2 resource header is not valid");
   }
-  // Entries: 8-byte name, image address, size.
+
   for (uint32_t at = resource_info + 4; at + 16 <= resource_info + info_size; at += 16) {
     XexResource resource;
     const char* name = reinterpret_cast<const char*>(xex.data() + at);
@@ -210,7 +210,6 @@ bool SystemUpdate::AddModule(std::string_view module, std::span<const uint8_t> x
     return false;
   }
   for (XexResource& resource : *resources) {
-    // Only XUIZ packages; XEXs also carry icons, XDBF and sounds.
     if (resource.bytes.size() < 4 || Be32(resource.bytes, 0) != kXuizMagic) {
       continue;
     }
@@ -272,7 +271,7 @@ std::unique_ptr<SystemUpdate> SystemUpdate::FromModules(const Modules& modules,
   std::string first_error;
   for (const auto& [module, bytes] : modules) {
     std::string add_error;
-    // A font that does not convert leaves the guide on its fallback font.
+
     const bool added = module.starts_with("font/")
                            ? update->AddFont(module.substr(5), bytes, &add_error)
                            : update->AddModule(module, bytes, &add_error);
@@ -293,7 +292,7 @@ std::unique_ptr<SystemUpdate> SystemUpdate::FromModules(const Modules& modules,
 }
 
 namespace {
-constexpr uint32_t kBundleMagic = 0x55475852;  // "RXGU", little-endian
+constexpr uint32_t kBundleMagic = 0x55475852;
 constexpr uint32_t kBundleVersion = 1;
 
 void PutU32(std::vector<uint8_t>& out, uint32_t v) {
@@ -301,7 +300,7 @@ void PutU32(std::vector<uint8_t>& out, uint32_t v) {
     out.push_back(uint8_t(v >> (i * 8)));
   }
 }
-}  // namespace
+}
 
 std::vector<uint8_t> SystemUpdate::WriteBundle(const Modules& modules) {
   std::vector<uint8_t> out;
@@ -383,8 +382,6 @@ std::optional<SystemUpdate::Modules> SystemUpdate::ReadModules(const std::filesy
     }
   };
 
-  // A file named $flash_<name> in a flash folder, or <name> as Xbox PC
-  // backward-compatibility games ship them.
   auto read_flash = [&](std::string_view name) {
     auto bytes = ReadHostFile(path / fmt::format("$flash_{}", name));
     return bytes ? bytes : ReadHostFile(path / name);
@@ -404,9 +401,8 @@ std::optional<SystemUpdate::Modules> SystemUpdate::ReadModules(const std::filesy
       }
       add_fonts(read_flash);
     } else {
-      // The update folder holds some fonts beside its package.
       add_fonts([&](const std::string& name) { return ReadHostFile(path / name); });
-      // The update package is named su<version>_00000000.
+
       for (const auto& item : std::filesystem::directory_iterator(path, ec)) {
         const std::string name = item.path().filename().string();
         if (item.is_regular_file(ec) && name.starts_with("su") && name.ends_with("_00000000")) {
@@ -459,4 +455,4 @@ std::optional<SystemUpdate::Modules> SystemUpdate::ReadModules(
   return modules.empty() ? std::nullopt : std::optional<Modules>(std::move(modules));
 }
 
-}  // namespace rex::ui::xui
+}

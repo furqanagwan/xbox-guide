@@ -30,7 +30,7 @@ namespace rex::ui::guide {
 namespace {
 
 constexpr float kRowHeight = 28.0f;
-constexpr size_t kMaxRows = 11;  // the list area of the Options scene
+constexpr size_t kMaxRows = 11;
 
 std::string FormatSize(uint64_t bytes) {
   if (bytes >= 1024 * 1024) {
@@ -64,7 +64,7 @@ system::xam::XCONTENT_AGGREGATE_DATA SaveContent(std::string_view name, std::str
   return data;
 }
 
-}  // namespace
+}
 
 std::vector<XboxGuide::SaveEntry> XboxGuide::FindSaves() const {
   std::vector<SaveEntry> saves;
@@ -75,7 +75,7 @@ std::vector<XboxGuide::SaveEntry> XboxGuide::FindSaves() const {
   auto* content = kernel_state->content_manager();
   const uint64_t profile_xuid =
       kernel_state->user_profile() ? kernel_state->user_profile()->xuid() : 0;
-  // The profile's saves, then any common to every profile.
+
   for (uint64_t xuid : {profile_xuid, uint64_t(0)}) {
     if (xuid == 0 && profile_xuid == 0 && !saves.empty()) {
       break;
@@ -103,7 +103,7 @@ std::vector<XboxGuide::SaveEntry> XboxGuide::FindSaves() const {
       saves.push_back(std::move(save));
     }
     if (profile_xuid == 0) {
-      break;  // both passes would list the same saves
+      break;
     }
   }
   std::stable_sort(saves.begin(), saves.end(),
@@ -146,7 +146,6 @@ void XboxGuide::FillManageStorage() {
   const float top = model->GetVector("Position").y;
   const size_t rows = std::min(saves_.size(), kMaxRows);
   for (size_t i = 0; i < rows; ++i) {
-    // btn_Count: the save's name on the left, its size on the right.
     xui::Element* row = scene->CloneChild(*model, fmt::format("btnSave{}", i), "btn_Count");
     xui::Vec3 p = model->GetVector("Position");
     p.y = top + float(i) * kRowHeight;
@@ -170,7 +169,7 @@ void XboxGuide::FillManageStorage() {
     }
   }
   if (xui::Element* status = scene->FindById("XuiLabel2")) {
-    status->Suppress();  // the status is in the details (ShowSave)
+    status->Suppress();
   }
   if (storage_rows_.empty()) {
     if (xui::Element* details = scene->FindById("XuiLabel1")) {
@@ -180,7 +179,7 @@ void XboxGuide::FillManageStorage() {
     SetLegends("", scene->GetString("LegendB"), "");
     return;
   }
-  SetFocus(storage_rows_.front(), /*initial=*/true);
+  SetFocus(storage_rows_.front(), true);
   ShowSave(storage_rows_.front());
 }
 
@@ -217,7 +216,6 @@ void XboxGuide::DeleteChosenSave() {
   const auto data =
       SaveContent(save.name, save.file_name, save.xuid, host_.kernel_state->title_id());
   if (content->IsContentOpen(data)) {
-    // The game has it open: deleting it now could lose what it writes next.
     storage_status_ = fmt::format("{} is in use by the game.", save.name);
     media_->PlaySound("sharedres://btn_InactiveSelect.xma", "");
     ShowSave(focus_);
@@ -240,4 +238,4 @@ void XboxGuide::DeleteChosenSave() {
   storage_status_.clear();
 }
 
-}  // namespace rex::ui::guide
+}

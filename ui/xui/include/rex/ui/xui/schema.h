@@ -24,8 +24,8 @@ enum class PropType : uint8_t {
   kVector,
   kQuaternion,
   kColor,
-  kObject,  // compound: Fill, Gradient, Stroke
-  kCustom,  // figure path
+  kObject,
+  kCustom,
 };
 
 struct ClassDef;
@@ -36,21 +36,16 @@ struct PropDef {
   bool indexed = false;
 };
 
-/// A class's own properties, in the order XUR property masks number them.
 struct ClassDef {
   std::string_view name;
-  std::string_view base;  // empty for a root class
+  std::string_view base;
   std::span<const PropDef> props;
 };
 
-/// Classes the console's guide, skin and achievement scenes use.
 const ClassDef* FindClass(std::string_view name);
 
-/// Base class first, as XUR property masks are written.
 std::vector<const ClassDef*> ClassChain(const ClassDef* derived);
 
-/// The class a compound (kObject) property's value is made of, by the
-/// property's name: Fill, Gradient or Stroke.
 const ClassDef* CompoundClass(std::string_view property_name);
 
-}  // namespace rex::ui::xui
+}

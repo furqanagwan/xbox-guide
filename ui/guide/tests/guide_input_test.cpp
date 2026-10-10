@@ -21,7 +21,7 @@ using namespace rex::input;
 namespace {
 constexpr uint16_t kBack = X_INPUT_GAMEPAD_BACK;
 constexpr uint16_t kStart = X_INPUT_GAMEPAD_START;
-}  // namespace
+}
 
 TEST_CASE("Back and Start together open the guide once per press", "[guide]") {
   GuideChord chord;
@@ -29,7 +29,7 @@ TEST_CASE("Back and Start together open the guide once per press", "[guide]") {
   CHECK_FALSE(chord.Update(kBack));
   CHECK(chord.Update(kBack | kStart));
   CHECK_FALSE(chord.Update(kBack | kStart));
-  // Letting go of one is not enough.
+
   CHECK_FALSE(chord.Update(kStart));
   CHECK_FALSE(chord.Update(kBack | kStart));
   CHECK_FALSE(chord.Update(0));
@@ -67,7 +67,7 @@ TEST_CASE("Held directions repeat after a delay", "[guide]") {
   CHECK(pad.Update(down, 0, 0, GuidePad::kRepeatDelayMs).size() == 1);
   CHECK(pad.Update(down, 0, 0, GuidePad::kRepeatDelayMs + 10).empty());
   CHECK(pad.Update(down, 0, 0, GuidePad::kRepeatDelayMs + GuidePad::kRepeatIntervalMs).size() == 1);
-  // The stick counts as a direction too.
+
   CHECK(pad.Update(0, -30000, 0, 2000) == std::vector<GuideAction>{GuideAction::kLeft});
   CHECK(pad.Update(0, 0, 0, 2010).empty());
 }
@@ -87,7 +87,7 @@ TEST_CASE("Switchable patch states are saved and restored by name", "[guide]") {
   REQUIRE(rex::cvar::SetFlagByName("code_patch_states", "Unlock FPS=1;Gone=0"));
   ApplySavedCodePatches(patches);
   CHECK(flags[0] == 1);
-  CHECK(flags[1] == 1);  // not named: keeps its compiled-in default
+  CHECK(flags[1] == 1);
   flags[1] = 0;
   CHECK(SaveCodePatchStates(patches) == "Unlock FPS=1;Ammo=0");
   rex::cvar::SetFlagByName("code_patch_states", "");

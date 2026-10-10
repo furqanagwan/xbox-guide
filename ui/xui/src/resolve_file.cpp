@@ -7,12 +7,11 @@
 
 namespace rex::ui::xui {
 namespace {
-// Where relative paths are looked for after the scene's own package: skin
-// visuals name images and sounds kept in XAM's skin and shared packages.
+
 constexpr std::string_view kFallbackPackages[] = {
     "xam/skin", "huduiskin/skin", "xam/xam", "xam/shrdres", "hud/hud", "gamerprofile/gp"};
 
-}  // namespace
+}
 
 std::span<const uint8_t> ResolveFile(const SystemUpdate& update, std::string_view path,
                                      std::string_view base_package) {
@@ -44,4 +43,4 @@ std::span<const uint8_t> ResolveFile(const SystemUpdate& update, std::string_vie
   return {};
 }
 
-}  // namespace rex::ui::xui
+}

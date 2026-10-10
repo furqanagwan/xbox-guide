@@ -21,12 +21,11 @@
 namespace rex::ui::xui {
 namespace {
 
-// Row-vector 2D affine map: x' = a x + c y + tx, y' = b x + d y + ty.
 struct Affine {
   float a = 1, b = 0, c = 0, d = 1, tx = 0, ty = 0;
 
   ImVec2 Apply(float x, float y) const { return {a * x + c * y + tx, b * x + d * y + ty}; }
-  // this after inner: (this * inner)(p) = this(inner(p)).
+
   Affine operator*(const Affine& o) const {
     return {a * o.a + c * o.b, b * o.a + d * o.b,        a * o.c + c * o.d,
             b * o.c + d * o.d, a * o.tx + c * o.ty + tx, b * o.tx + d * o.ty + ty};
@@ -42,9 +41,6 @@ Affine Scale(float x, float y) {
   return {x, 0, 0, y, 0, 0};
 }
 
-// The quaternion's rotation seen from the front: its 3x3 matrix's x/y part.
-// A turn about Z rotates; a half turn about X or Y mirrors, as XUI's 3D
-// rotations look on the flat screen.
 Affine Rotate(const Quat& q) {
   const float xx = q.x * q.x, yy = q.y * q.y, zz = q.z * q.z;
   const float xy = q.x * q.y, zw = q.z * q.w;
@@ -62,11 +58,6 @@ ImU32 ToImColor(uint32_t argb, float opacity) {
                   uint32_t(std::lround(alpha)));
 }
 
-// XUI BlendMode 1 multiplies the destination by the colour: the skin's row
-// separators (Top and Bottom, 0xffd2d5d9) darken whatever is under them by
-// the same proportion, so they look equally dark on every row. Over a normal
-// alpha blend, multiplying by a grey g is drawing black at alpha 1 - g; the
-// channels' mean stands for g (the skin's multiplied colours are near grey).
 constexpr uint32_t kBlendMultiply = 1;
 
 uint32_t MultiplyAsBlack(uint32_t argb) {
@@ -98,11 +89,8 @@ uint32_t SampleStops(const std::vector<Stop>& stops, float t) {
   return stops.back().argb;
 }
 
-// Subdivisions per fan triangle side for multi-stop and radial gradients.
 constexpr int kGradientSteps = 10;
-// Radial gradients make thin bands (the ring of light's arcs), so they are
-// subdivided by their size on screen: one step per kRadialStepPixels, within
-// these limits. A fixed 32 put some pages past 160,000 vertices.
+
 constexpr float kRadialStepPixels = 2.0f;
 constexpr int kRadialMinSteps = 4;
 constexpr int kRadialMaxSteps = 32;
@@ -164,8 +152,6 @@ class Renderer {
   }
 
  private:
-  // The figure's outline in element units: its Bezier path scaled to the
-  // element's size, or the element's box.
   std::vector<ImVec2> Outline(const Element& element, float w, float h) const {
     std::vector<ImVec2> points;
     const Value* v = element.Get("Points");
@@ -212,7 +198,7 @@ class Renderer {
     multiply_ = element.GetUnsigned("BlendMode") == kBlendMultiply;
     if (const PropertyBag* fill = element.GetCompound("Fill")) {
       const uint32_t* type = Member<uint32_t>(fill, "FillType");
-      const uint32_t fill_type = type ? *type : 1;  // a Fill with no type is solid
+      const uint32_t fill_type = type ? *type : 1;
       std::vector<Stop> stops;
       if (fill_type == 2 || fill_type == 3) {
         const auto* gradient = Member<std::shared_ptr<const PropertyBag>>(fill, "Gradient");
@@ -238,7 +224,7 @@ class Renderer {
         const float* rotation = Member<float>(fill, "Rotation");
         const float radians = (rotation ? *rotation : 0.0f) * 3.14159265f / 180.0f;
         const float dx = std::cos(radians), dy = std::sin(radians);
-        // Project the box onto the gradient direction for the 0..1 range.
+
         const float extent = std::fabs(dx) * w + std::fabs(dy) * h;
         FillPolygon(
             m, outline,
@@ -249,11 +235,6 @@ class Renderer {
             },
             opacity, stops.size() > 2 ? kGradientSteps : 1);
       } else if (fill_type == 3) {
-        // The brush is the box's inscribed ellipse with the fill's Scale and
-        // Translation (in box units, turned by its Rotation) applied to the
-        // brush's texture coordinates, so the ellipse itself moves the other
-        // way and grows as the scale shrinks. The ring of light's quarter
-        // arcs (Scale 0.55, Translation 0.34) are centred past a corner.
         const Vec3* translation = Member<Vec3>(fill, "Translation");
         const Vec3* brush_scale = Member<Vec3>(fill, "Scale");
         const float* rotation = Member<float>(fill, "Rotation");
@@ -301,9 +282,6 @@ class Renderer {
     }
   }
 
-  // Fans the outline from its centroid; gradients subdivide each fan triangle
-  // `steps` times per side so colour follows the gradient, not just the
-  // corners.
   template <typename ColorAt>
   void FillPolygon(const Affine& m, const std::vector<ImVec2>& outline, ColorAt color_at,
                    float opacity, int steps) {
@@ -323,7 +301,7 @@ class Renderer {
       const ImVec2 b = outline[(e + 1) % n];
       list_->PrimReserve(steps * steps * 3, vertices_per_triangle);
       const ImDrawIdx base = ImDrawIdx(list_->_VtxCurrentIdx);
-      // Row i is i/steps of the way from the centre; it has i + 1 vertices.
+
       for (int i = 0; i <= steps; ++i) {
         const float f = float(i) / float(steps);
         for (int j = 0; j <= i; ++j) {
@@ -358,7 +336,6 @@ class Renderer {
                         ImVec2(u0, v1), color);
   }
 
-  // The control whose data a presenter shows: the nearest control above it.
   static const Element* OwningControl(const Element& presenter) {
     for (const Element* e = presenter.parent(); e; e = e->parent()) {
       if (e->IsA("XuiControl")) {
@@ -379,7 +356,7 @@ class Renderer {
             *list_, path, [&](ImVec2 p) { return m.Apply(p.x, p.y); }, opacity)) {
       return;
     }
-    // Other images that are scenes are not drawn.
+
     if (path.empty() || path.ends_with(".xur") || !resources_.texture) {
       return;
     }
@@ -390,7 +367,6 @@ class Renderer {
     }
     float x0 = 0, y0 = 0, x1 = w, y1 = h;
     if (element.GetUnsigned("SizeMode") != 0) {
-      // Fit, keeping the image's aspect, centred.
       const float fit = std::min(w / float(tw), h / float(th));
       const float dw = float(tw) * fit, dh = float(th) * fit;
       x0 = (w - dw) / 2;
@@ -439,8 +415,6 @@ class Renderer {
     if (element.IsA("XuiText")) {
       text = element.text();
     } else if (const Element* control = OwningControl(element)) {
-      // text_Label2 and a slider's Text_Slider carry a control's second label
-      // (a count or a value).
       text = element.id() == "text_Label2" || element.id() == "Text_Slider"
                  ? control->secondary_text()
                  : std::string(control->text());
@@ -458,18 +432,16 @@ class Renderer {
     if (s <= 0.0f) {
       return;
     }
-    // Lay the text out in element units scaled to pixels (so glyphs are
-    // rasterized at their screen size), then map the vertices through `m`.
+
     const float size = element.GetFloat("PointSize", 14.0f) * kPointToSceneUnits * s;
     const float box_w = w * s, box_h = h * s;
-    // Edit controls (message box bodies) wrap whatever their presenter says.
+
     const Element* owner = element.IsA("XuiTextPresenter") ? OwningControl(element) : nullptr;
     const bool wrap = !(style & kTextNoWrap) || (owner && owner->IsA("XuiEdit"));
     if (!wrap && (style & kTextEllipsis)) {
       if (font->CalcTextSizeA(size, FLT_MAX, 0.0f, text.c_str()).x > box_w) {
         while (!text.empty() &&
                font->CalcTextSizeA(size, FLT_MAX, 0.0f, (text + "...").c_str()).x > box_w) {
-          // Drop whole UTF-8 characters.
           do {
             text.pop_back();
           } while (!text.empty() && (uint8_t(text.back()) & 0xC0) == 0x80);
@@ -492,8 +464,7 @@ class Renderer {
     if (style & kTextVerticalCenter) {
       y = (box_h - extent.y) / 2;
     }
-    // Wrapped text taller than its box (a long description in a fixed pane)
-    // scrolls through it as the console's did, clipped to the box.
+
     bool clipped = false;
     if (wrap && !(owner && owner->IsA("XuiEdit")) && box_h >= size && extent.y > box_h &&
         resources_.text_scroll) {
@@ -503,7 +474,7 @@ class Renderer {
         scroll.text = text;
         scroll.start = now;
       }
-      // About three quarters of a line a second.
+
       const TextScrollFrame frame =
           TextScrollAt(now - scroll.start, extent.y - box_h, size * 0.75f);
       y -= frame.offset;
@@ -536,8 +507,6 @@ class Renderer {
     }
   }
 
-  // One unwrapped line with gamerscore glyphs, each drawn as the
-  // kGamerscoreImage square in the text colour, the height of a capital.
   void DrawGlyphLine(const std::string& text, ImFont& font, float size, uint32_t style, float box_w,
                      float box_h, const Element& element, const Affine& m, float s, float opacity) {
     int glyph_w = 0, glyph_h = 0;
@@ -556,7 +525,7 @@ class Renderer {
     auto width_of = [&](std::string_view part) {
       return font.CalcTextSizeA(size, FLT_MAX, 0.0f, part.data(), part.data() + part.size()).x;
     };
-    // Each glyph between two parts, with a gap on the side that has text.
+
     float total = 0.0f;
     for (size_t i = 0; i < parts.size(); ++i) {
       total += width_of(parts[i]);
@@ -584,8 +553,6 @@ class Renderer {
         x += width_of(part) + gap;
       }
       if (i + 1 < parts.size()) {
-        // Beside text, centred on its digits; alone (a visual's glyph
-        // presenter), centred in its box as the font places it.
         const bool alone = text.size() == kGamerscoreGlyph.size();
         const float top =
             alone ? (box_h - glyph_size) / 2 + size * 0.1f : y + size * 0.52f - glyph_size / 2;
@@ -605,10 +572,10 @@ class Renderer {
 
   ImDrawList* list_;
   const RenderResources& resources_;
-  bool multiply_ = false;  // the figure being filled has BlendMode multiply
+  bool multiply_ = false;
 };
 
-}  // namespace
+}
 
 GradientSpan EdgeFadeOnScreen(GradientSpan fade, float pixels_per_unit) {
   if (pixels_per_unit <= 1.0f) {
@@ -631,7 +598,6 @@ TextScrollFrame TextScrollAt(double elapsed, float overflow, float speed) {
   const double t = since - round * cycle;
   TextScrollFrame frame;
   if (t < kHoldTop) {
-    // Fades back in at the top, except the first time it's shown.
     frame.alpha = round > 0 ? float(std::min(1.0, t / kFade)) : 1.0f;
   } else if (t < kHoldTop + scroll) {
     frame.offset = float((t - kHoldTop) * speed);
@@ -651,4 +617,4 @@ void Render(ImDrawList* list, const Element& root, ImVec2 origin, float scale, f
   renderer.Draw(root, Translate(origin.x, origin.y) * Scale(scale, scale), opacity);
 }
 
-}  // namespace rex::ui::xui
+}

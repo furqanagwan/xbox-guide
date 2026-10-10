@@ -33,9 +33,6 @@ void Put32(std::vector<uint8_t>& b, size_t at, uint32_t v) {
   b[at + 3] = uint8_t(v);
 }
 
-// A LIVE title update header like Quantum of Solace's title update 2: title
-// 415607FF, media 06DD88A0, base version 7, header size 0xAD0E, whose content
-// ID is the SHA-1 of 0x344 to 0xB000.
 std::vector<uint8_t> MakePackage(uint32_t content_type = kTitleUpdateContentType) {
   std::vector<uint8_t> b(0xB000 + 0x1000, 0);
   std::copy_n("LIVE", 4, b.begin());
@@ -84,7 +81,7 @@ void WriteFile(const fs::path& path, const std::vector<uint8_t>& bytes) {
       .write(reinterpret_cast<const char*>(bytes.data()), std::streamsize(bytes.size()));
 }
 
-}  // namespace
+}
 
 TEST_CASE("A title update package's header is read and its content ID checked",
           "[guide][title_update]") {
@@ -99,7 +96,7 @@ TEST_CASE("A title update package's header is read and its content ID checked",
   CHECK(package->display_name == "Quantum of Solace");
   CHECK(package->content_id_valid);
 
-  bytes[0x9000] ^= 1;  // inside the hashed header region
+  bytes[0x9000] ^= 1;
   package = ReadTitleUpdatePackage(bytes, &error);
   REQUIRE(package);
   CHECK_FALSE(package->content_id_valid);
@@ -115,7 +112,7 @@ TEST_CASE("A package is accepted only as the update the title lists", "[guide][t
   const auto good = *ReadTitleUpdatePackage(bytes, nullptr);
   CHECK(CheckTitleUpdatePackage(good, Expected(id), 0x415607FF).empty());
 
-  CHECK_FALSE(CheckTitleUpdatePackage(good, Expected(id), 0x4156081F).empty());  // other game
+  CHECK_FALSE(CheckTitleUpdatePackage(good, Expected(id), 0x4156081F).empty());
   auto other_disc = Expected(id);
   other_disc.media_id = "76ECEE40";
   CHECK_FALSE(CheckTitleUpdatePackage(good, other_disc, 0x415607FF).empty());
@@ -131,7 +128,6 @@ TEST_CASE("A package is accepted only as the update the title lists", "[guide][t
 }
 
 TEST_CASE("Xbox Unity's listing gives the update ID for a content ID", "[guide][title_update]") {
-  // TitleUpdateInfo.php?titleid=415607FF, 2026-10-01.
   const std::string qos =
       R"({"Type":1,"MediaIDS":[{"MediaID":"06DD88A0","Updates":[{"TitleUpdateID":"22386",)"
       R"("Version":"2","hash":"B59A1F29F4FB82AB35DC7AEC8975F83F620A8290","Size":"2420",)"
@@ -141,7 +137,7 @@ TEST_CASE("Xbox Unity's listing gives the update ID for a content ID", "[guide][
   CHECK(FindXboxUnityUpdateId(qos, "b59a1f29f4fb82ab35dc7aec8975f83f620a8290") == "22386");
   CHECK(FindXboxUnityUpdateId(qos, "8FFAE973B21854157E385306A385A3F427634CD5") == "21248");
   CHECK_FALSE(FindXboxUnityUpdateId(qos, std::string(40, '0')));
-  // 007 Legends has none.
+
   CHECK_FALSE(FindXboxUnityUpdateId(R"({"Type":2,"Updates":[]})", std::string(40, '0')));
   CHECK_FALSE(FindXboxUnityUpdateId("not json", std::string(40, '0')));
 }
@@ -171,7 +167,6 @@ TEST_CASE("A checked package is installed into the update's folder", "[guide][ti
   CHECK(installed == TitleUpdateFolder(dir.path, 2) / picked.filename());
   CHECK(fs::file_size(installed) == bytes.size());
 
-  // A wrong package is refused and leaves the installed one alone.
   auto bad = bytes;
   bad[0x9000] ^= 1;
   const fs::path damaged = dir.path / "picked" / "damaged";
@@ -179,7 +174,6 @@ TEST_CASE("A checked package is installed into the update's folder", "[guide][ti
   CHECK_FALSE(InstallTitleUpdate(damaged, Expected(id), 0x415607FF, dir.path).empty());
   CHECK(FindInstalledTitleUpdate(dir.path, 2) == installed);
 
-  // A finished download (<name>.part) is installed under its own name, alone.
   const fs::path part = TitleUpdateFolder(dir.path, 2) / "title_update_2.part";
   WriteFile(part, bytes);
   CHECK(InstallTitleUpdate(part, Expected(id), 0x415607FF, dir.path).empty());
@@ -230,38 +224,33 @@ TEST_CASE("The player's title update choice picks the executable, the original o
   CHECK(TitleUpdateExecutable(original, 0, 2) == update);
   CHECK(TitleUpdateExecutable(update, 2, 0) == original);
 
-  // Off: the original runs.
   auto choice = ChooseLaunch(0, 0, original, local, false);
   CHECK_FALSE(choice.hand_off);
   CHECK_FALSE(choice.cannot_run);
 
-  // On, but not installed or not built: the original runs anyway.
   choice = ChooseLaunch(0, 2, original, local, false);
   CHECK_FALSE(choice.hand_off);
   CHECK_FALSE(choice.note.empty());
   WriteFile(TitleUpdateFolder(local, 2) / "title_update_2", {1});
   choice = ChooseLaunch(0, 2, original, local, false);
-  CHECK_FALSE(choice.hand_off);  // no qos_tu2.exe yet
+  CHECK_FALSE(choice.hand_off);
 
-  // On, installed and built: hand over to the update build...
   WriteFile(update, {0});
   choice = ChooseLaunch(0, 2, original, local, false);
   CHECK(choice.hand_off);
   CHECK(choice.executable == update);
-  // ...which runs with the installed package.
+
   choice = ChooseLaunch(2, 2, update, local, true);
   CHECK_FALSE(choice.hand_off);
   CHECK(choice.update == TitleUpdateFolder(local, 2) / "title_update_2");
 
-  // Turned off: the update build hands back to the original.
   choice = ChooseLaunch(2, 0, update, local, false);
   CHECK(choice.hand_off);
   CHECK(choice.executable == original);
-  // Never twice: a handed-over build runs as it is.
+
   choice = ChooseLaunch(0, 2, original, local, true);
   CHECK_FALSE(choice.hand_off);
 
-  // The update removed: the update build goes back to the original.
   fs::remove_all(TitleUpdateFolder(local, 2));
   choice = ChooseLaunch(2, 2, update, local, false);
   CHECK(choice.hand_off);
@@ -271,7 +260,6 @@ TEST_CASE("The player's title update choice picks the executable, the original o
   CHECK(choice.cannot_run);
 }
 
-// Reaches xboxunity.net, so it runs only when asked for: unit_tests "[.network]".
 TEST_CASE("Quantum of Solace's title update 2 downloads from Xbox Unity and installs",
           "[.network][guide][title_update]") {
   TempDir dir("rex_title_update_network");

@@ -38,8 +38,6 @@ constexpr int kVolumeStep = 10;
 constexpr float kRowHeight = 28.0f;
 constexpr size_t kMaxChoiceRows = 8;
 
-// A slider's body shows its value at frames 0..100, and focused at
-// 101..201 (the skin's XuiSlider visual).
 constexpr double kSliderFocusFrame = 101.0;
 
 void SetText(xui::Element* scene, std::string_view id, std::string text) {
@@ -69,8 +67,6 @@ void SetNav(xui::Element* control, std::string up, std::string down) {
   control->Set("NavDown", xui::Value{std::move(down)});
 }
 
-// Windows names an output "<device> (<adapter>)"; the rows show the device,
-// unless two outputs share it.
 std::vector<std::string> OutputRowNames(const std::vector<audio::AudioOutput>& outputs) {
   std::vector<std::string> names;
   for (const audio::AudioOutput& output : outputs) {
@@ -92,9 +88,6 @@ std::vector<std::string> OutputRowNames(const std::vector<audio::AudioOutput>& o
   return names;
 }
 
-// The Voice scene's Play Through radio list (headset, speakers or both) with
-// a row per text, rows past its three copied from its last, below `heading`.
-// Empty when the scene has no such list.
 std::vector<xui::Element*> FillPlayThroughList(xui::Element* scene,
                                                const std::vector<std::string>& texts,
                                                std::string heading) {
@@ -133,7 +126,6 @@ std::vector<xui::Element*> FillPlayThroughList(xui::Element* scene,
   return rows;
 }
 
-// Radio buttons: one checked in the group.
 void CheckOnly(xui::Element* group, xui::Element* chosen) {
   for (const auto& button : group->children()) {
     if (button->IsA("XuiRadioButton")) {
@@ -142,11 +134,10 @@ void CheckOnly(xui::Element* group, xui::Element* chosen) {
   }
 }
 
-}  // namespace
+}
 
 XboxGuide::SettingsPage& XboxGuide::PushPage(const xui::Document& scene, std::string heading) {
   if (pages_.empty()) {
-    // As for Achievements: the HUD goes full height, the blade goes out.
     hud_root_->Play("HalfToFull");
     tabs_->Play(fmt::format("{}Open", tab_));
     main_->SetVisible(false);
@@ -188,7 +179,7 @@ void XboxGuide::PopPage() {
     below->SetVisible(true);
     SetLegends(below->GetString("LegendA"), below->GetString("LegendB"), "");
   }
-  SetFocus(page.return_focus, /*initial=*/true);
+  SetFocus(page.return_focus, true);
   if (!pages_.empty() && pages_.back().on_focus) {
     pages_.back().on_focus();
   }
@@ -196,7 +187,6 @@ void XboxGuide::PopPage() {
 }
 
 void XboxGuide::HandleSettings(GuideAction action) {
-  // Copies: a handler may push a page, which moves pages_.
   const SettingsPage page = pages_.back();
   switch (action) {
     case GuideAction::kUp:
@@ -243,8 +233,7 @@ void XboxGuide::HandleSettings(GuideAction action) {
 
 void XboxGuide::OpenPreferences() {
   xui::Element* scene = PushPage(assets_->options, "").scene;
-  // Online Status, Family Timer and Word Registration are Xbox Live and
-  // console features; a recompiled title has none of them.
+
   for (std::string_view id : {"btnOnlineStatus", "btnPlayTimer", "btnWordRegister"}) {
     RemoveEntry(scene, id);
   }
@@ -256,7 +245,7 @@ void XboxGuide::OpenPreferences() {
     AddEntry(scene, "btnVoice", host_.audio_outputs ? "btnAudioOutput" : "btnVoice", "btnDisplay",
              "Display");
   }
-  // The render resolution is under Xbox Settings where the guide has it.
+
   if (!assets_->has_xbox_settings) {
     AddEntry(scene, "btnController", "btnController", "btnResolution", "Resolution");
   }
@@ -276,9 +265,9 @@ void XboxGuide::OpenPreferences() {
       OpenResolution();
     }
   };
-  // The scene lists its entries bottom up; focus starts at the top one.
+
   xui::Element* top = scene->FindById("btnNotifications");
-  SetFocus(top ? top : FirstFocusable(scene), /*initial=*/true);
+  SetFocus(top ? top : FirstFocusable(scene), true);
 }
 
 void XboxGuide::OpenVibration() {
@@ -296,7 +285,7 @@ void XboxGuide::OpenVibration() {
       host_.save_settings();
     }
   };
-  SetFocus(check, /*initial=*/true);
+  SetFocus(check, true);
 }
 
 void XboxGuide::SetSlider(xui::Element* slider, int value) {
@@ -309,10 +298,7 @@ void XboxGuide::SetSlider(xui::Element* slider, int value) {
 
 void XboxGuide::OpenVolume() {
   xui::Element* scene = PushPage(assets_->options_voice, "Volume").scene;
-  // Voice Volume and voice output are for chat; Game Volume is the title's
-  // output level (audio_volume). The Kinect checkbox, which the console shows
-  // only with a Kinect, becomes Mute When Minimized (audio_mute_minimized),
-  // as Microsoft's PC backward compatibility silences a minimised title.
+
   Hide(scene, {"sliderVolume", "radgrpOutputLocation", "LabelSubHeader2"});
   xui::Element* slider = scene->FindById("sliderDucking");
   xui::Element* mute = scene->FindById("chkMuteKinect");
@@ -358,14 +344,13 @@ void XboxGuide::OpenVolume() {
     }
   };
   pages_.back().on_focus = [this, slider] { SetSlider(slider, REXCVAR_GET(audio_volume)); };
-  SetFocus(slider, /*initial=*/true);
+  SetFocus(slider, true);
   SetSlider(slider, REXCVAR_GET(audio_volume));
 }
 
 void XboxGuide::OpenNotifications() {
   xui::Element* scene = PushPage(assets_->options_notifications, "").scene;
-  // Notifications here are achievement unlocks; videos, TV and the
-  // console's sound setting do not apply.
+
   Hide(scene, {"chkShowMovies", "chkShowIPTV", "XuiLabel2", "labelSoundDisabled"});
   xui::Element* show = scene->FindById("chkShow");
   xui::Element* sound = scene->FindById("chkSound");
@@ -374,7 +359,7 @@ void XboxGuide::OpenNotifications() {
   }
   auto refresh = [show, sound] {
     show->SetChecked(REXCVAR_GET(notifications_show));
-    // Play Sound belongs to Show Notifications, as on the console.
+
     sound->Set("Enabled", xui::Value{REXCVAR_GET(notifications_show)});
     sound->SetChecked(REXCVAR_GET(notifications_sound));
   };
@@ -388,13 +373,12 @@ void XboxGuide::OpenNotifications() {
       host_.save_settings();
     }
   };
-  SetFocus(show, /*initial=*/true);
+  SetFocus(show, true);
 }
 
 void XboxGuide::OpenResolution() {
   xui::Element* scene = PushPage(assets_->options_voice, "Resolution").scene;
-  // The Voice scene's output choice is the console's radio list; its
-  // sliders and Kinect option are not used.
+
   Hide(scene, {"sliderVolume", "sliderDucking", "chkMuteKinect"});
   xui::Element* group = scene->FindById("radgrpOutputLocation");
   xui::Element* last = scene->FindById("radbtnPlayBoth");
@@ -405,7 +389,7 @@ void XboxGuide::OpenResolution() {
   struct Choice {
     std::string id;
     std::string text;
-    int scale;  // 0: match the display
+    int scale;
   };
   const std::vector<Choice> choices = {
       {"radbtnPlayHeadset", "Original", 1},
@@ -456,7 +440,7 @@ void XboxGuide::OpenResolution() {
       }
     }
   };
-  SetFocus(chosen ? chosen : group->FindById(choices.front().id), /*initial=*/true);
+  SetFocus(chosen ? chosen : group->FindById(choices.front().id), true);
 }
 
 void XboxGuide::OpenAudioOutput() {
@@ -536,7 +520,7 @@ void XboxGuide::OpenAudioOutput() {
       host_.save_settings();
     }
   };
-  SetFocus(checked, /*initial=*/true);
+  SetFocus(checked, true);
   pages_.back().on_focus();
 }
 
@@ -585,16 +569,14 @@ void XboxGuide::OpenDisplay() {
       host_.save_settings();
     }
   };
-  SetFocus(rows[chosen], /*initial=*/true);
+  SetFocus(rows[chosen], true);
   pages_.back().on_focus();
 }
 
 void XboxGuide::OpenXboxSettings() {
   xui::Element* scene = PushPage(assets_->xbox_settings, "").scene;
   SetText(scene, "labelHeadingOptions", "Xbox Settings");
-  // Optimize game for: Graphics draws the game at the display's resolution
-  // (a multiple of the console's), Performance at the console's own. A
-  // resolution takes effect at the next start, not by ending the session.
+
   SetText(scene, "XuiLabel1",
           "The new setting is used the next time you start the game.\n"
           "Optimizing for graphics makes this game look better.\n"
@@ -624,7 +606,7 @@ void XboxGuide::OpenXboxSettings() {
       host_.save_settings();
     }
   };
-  SetFocus(match ? graphics : performance, /*initial=*/true);
+  SetFocus(match ? graphics : performance, true);
 }
 
 void XboxGuide::OpenPatches(std::string_view category) {
@@ -637,7 +619,7 @@ void XboxGuide::OpenPatches(std::string_view category) {
       patches.push_back(p);
     }
   }
-  // One checkbox per patch, copies of Show Notifications, in its place.
+
   std::vector<xui::Element*> boxes;
   const float top = model ? model->GetVector("Position").y : 62.0f;
   const size_t rows = std::min(patches.size(), size_t(12));
@@ -679,13 +661,10 @@ void XboxGuide::OpenPatches(std::string_view category) {
       }
     }
   };
-  SetFocus(boxes.front(), /*initial=*/true);
+  SetFocus(boxes.front(), true);
 }
 
 void XboxGuide::OpenCheats() {
-  // The title's own cheat codes: nothing to switch, so each row is the
-  // checkbox copy without its box, and the panel says what the code does
-  // and where the game takes it.
   xui::Element* scene = PushPage(assets_->options_notifications, "Cheats").scene;
   xui::Element* model = scene->FindById("chkShow");
   std::vector<const PPCTitleCheat*> cheats;
@@ -730,8 +709,8 @@ void XboxGuide::OpenCheats() {
     }
   };
   pages_.back().on_focus = show;
-  SetFocus(rows.front(), /*initial=*/true);
+  SetFocus(rows.front(), true);
   show();
 }
 
-}  // namespace rex::ui::guide
+}

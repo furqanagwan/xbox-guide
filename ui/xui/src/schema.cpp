@@ -8,13 +8,6 @@
 
 #include <rex/ui/xui/schema.h>
 
-// XUR v8 writes one property mask per class, base class first, bit N meaning
-// the class's Nth property. The order below is interoperability data: it is
-// what the console's XUI runtime numbers. It covers the classes the 17559
-// guide, skin and achievement scenes use, and was checked by decoding every
-// one of those scenes to its declared object count with the DATA section fully
-// consumed. docs/xbox-guide.md records how.
-
 namespace rex::ui::xui {
 namespace {
 
@@ -263,8 +256,7 @@ constexpr ClassDef kClasses[] = {
     {"XuiNavButton", "XuiButton", kXuiNavButton},
     {"GuideDashCommandNavButton", "XuiNavButton", kGuideDashCommandNavButton},
     {"GuideMainSceneNavButton", "XuiNavButton", kGuideMainSceneNavButton},
-    // A dash command button: SettingsTabSignedIn writes a DashCommand mask
-    // level between XuiNavButton's and its own.
+
     {"AccountManagementNavButton", "GuideDashCommandNavButton", {}},
     {"XuiCaret", "XuiControl", {}},
     {"XuiCheckbox", "XuiControl", kPressKeyOnly},
@@ -282,13 +274,13 @@ constexpr ClassDef kClasses[] = {
     {"XuiScene", "XuiControl", kXuiScene},
     {"HUDScene", "XuiScene", kHUDScene},
     {"XuiTabScene", "XuiScene", kXuiTabScene},
-    // Compound property classes, reached through Fill, Gradient and Stroke.
+
     {"XuiFigureFill", "", kFigureFill},
     {"XuiFigureFillGradient", "", kFigureFillGradient},
     {"XuiFigureStroke", "", kFigureStroke},
 };
 
-}  // namespace
+}
 
 const ClassDef* FindClass(std::string_view name) {
   for (const ClassDef& cls : kClasses) {
@@ -321,4 +313,4 @@ const ClassDef* CompoundClass(std::string_view property_name) {
   return nullptr;
 }
 
-}  // namespace rex::ui::xui
+}

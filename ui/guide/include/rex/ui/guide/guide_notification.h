@@ -18,18 +18,14 @@
 
 namespace rex::ui::guide {
 
-/// Plays xam's notify.xur (the scr_Notification visual: the Xbox logo burst,
-/// the bar sliding out, NotifyPopup.xma) with XAM's "Achievement unlocked"
-/// text, one unlock at a time at the bottom of the screen. Without a system
-/// update it hands unlocks to `fallback`.
 class GuideNotificationDialog final : public AchievementNotificationDialog {
  public:
   struct Media {
     std::shared_ptr<const GuideAssets> assets;
     GuideMedia* media = nullptr;
-    bool unavailable = false;  // no system update: use the fallback
+    bool unavailable = false;
   };
-  /// Called on the UI thread each frame.
+
   using MediaSource = std::function<Media()>;
 
   GuideNotificationDialog(ImGuiDrawer* drawer, MediaSource source, GuideFonts fonts,
@@ -48,7 +44,7 @@ class GuideNotificationDialog final : public AchievementNotificationDialog {
   GuideFonts fonts_;
   std::unique_ptr<AchievementNotificationDialog> fallback_;
   std::mutex mutex_;
-  std::deque<system::AchievementEvent> queue_;  // guarded by mutex_
+  std::deque<system::AchievementEvent> queue_;
 
   std::shared_ptr<const GuideAssets> assets_;
   GuideMedia* media_ = nullptr;
@@ -60,4 +56,4 @@ class GuideNotificationDialog final : public AchievementNotificationDialog {
   std::chrono::steady_clock::time_point started_;
 };
 
-}  // namespace rex::ui::guide
+}

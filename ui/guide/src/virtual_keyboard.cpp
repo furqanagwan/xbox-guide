@@ -15,9 +15,6 @@ namespace {
 
 using namespace std::string_view_literals;
 
-// The English pages of the 2.0.17559 keyboard, row by row, as vk.xex lays
-// them out (its tables give "-" and "." as the virtual keys 0xBD and 0xBE).
-// The letters have four rows; the fifth is blank.
 constexpr std::u16string_view kLayouts[VirtualKeyboard::kPages] = {
     u"1234567890"
     u"qwertyuiop"
@@ -39,9 +36,6 @@ static_assert(kLayouts[0].size() == VirtualKeyboard::kRows * VirtualKeyboard::kC
 static_assert(kLayouts[1].size() == VirtualKeyboard::kRows * VirtualKeyboard::kColumns);
 static_assert(kLayouts[2].size() == VirtualKeyboard::kRows * VirtualKeyboard::kColumns);
 
-// The capital of a letter on the keyboard's pages (Basic Latin, Latin-1 and
-// Latin Extended-A); `c` when it has none (ß, µ). towupper only maps ASCII in
-// the C locale.
 char16_t Upper(char16_t c) {
   if ((c >= u'a' && c <= u'z') || (c >= 0xE0 && c <= 0xFE && c != 0xF7)) {
     return char16_t(c - 0x20);

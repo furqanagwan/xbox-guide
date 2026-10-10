@@ -4,14 +4,14 @@
 #include <rex/ui/xui/runtime.h>
 
 namespace rex::ui::guide {
-// Immutable UI snapshot. The host owns work; cancellation must be nonblocking.
+
 struct GuideActivity {
   std::string title;
   std::string status;
   std::string details;
   std::function<void()> cancel;
 };
-// Prepare the reused console template even when there are no activity rows.
+
 void PrepareActiveDownloadsScene(xui::Element& root);
 
 class ActiveDownloadsScene {
@@ -20,7 +20,7 @@ class ActiveDownloadsScene {
   ActiveDownloadsScene& operator=(const ActiveDownloadsScene&) = delete;
   ActiveDownloadsScene(ActiveDownloadsScene&&) = delete;
   ActiveDownloadsScene& operator=(ActiveDownloadsScene&&) = delete;
-  // The document and skin referenced by context must outlive this model.
+
   static std::unique_ptr<ActiveDownloadsScene> Create(const xui::Document& document,
                                                       const xui::SceneContext& context);
   xui::Element& root() { return *root_; }
@@ -38,4 +38,4 @@ class ActiveDownloadsScene {
   std::vector<xui::Element*> rows_;
   size_t focused_ = 0;
 };
-}  // namespace rex::ui::guide
+}

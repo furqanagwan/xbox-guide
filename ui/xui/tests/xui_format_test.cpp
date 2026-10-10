@@ -25,8 +25,6 @@ using namespace xui_test;
 
 namespace {
 
-// Writes XUR v8 the way the console's files are laid out: pools, then an
-// element tree referring into them.
 struct XurWriter {
   std::vector<std::string> strings;
   std::vector<float> floats;
@@ -121,24 +119,22 @@ struct XurWriter {
   }
 };
 
-// A canvas holding a text, a gradient-filled figure and a second text that
-// shares the first's properties, with a timeline for each of the first two.
 Bytes SampleScene() {
   XurWriter w;
-  // Canvas: Width, Height (XuiElement bits 1 and 2), children, timelines.
+
   w.Object("XuiCanvas", 0x1 | 0x2 | 0x4);
   Packed(w.data, 2);
-  Packed(w.data, 0b110);  // XuiElement
+  Packed(w.data, 0b110);
   Packed(w.data, w.Flt(852.0f));
   Packed(w.data, w.Flt(480.0f));
-  Packed(w.data, 0);  // XuiCanvas
-  Packed(w.data, 3);  // children
+  Packed(w.data, 0);
+  Packed(w.data, 3);
 
   w.Object("XuiText", 0x1);
   Packed(w.data, 4);
-  Packed(w.data, 0b1);  // XuiElement: Id
+  Packed(w.data, 0b1);
   Packed(w.data, w.Str("label"));
-  Packed(w.data, 0b1011);  // XuiText: Text, TextColor, PointSize
+  Packed(w.data, 0b1011);
   Packed(w.data, w.Str("Xbox Guide"));
   Packed(w.data, w.Col(0xFFEBEBEB));
   Packed(w.data, w.Flt(12.0f));
@@ -147,14 +143,14 @@ Bytes SampleScene() {
   Packed(w.data, 2);
   Packed(w.data, 0b1);
   Packed(w.data, w.Str("fig"));
-  Packed(w.data, 0b10);  // XuiFigure: Fill
-  Packed(w.data, 0);     // a new compound
+  Packed(w.data, 0b10);
+  Packed(w.data, 0);
   Packed(w.data, 3);
-  Packed(w.data, 0b1011);  // FillType, FillColor, Gradient
+  Packed(w.data, 0b1011);
   Packed(w.data, 2);
   Packed(w.data, w.Col(0xFF008A00));
-  Packed(w.data, 0);  // a new compound
-  Packed(w.data, 5);  // NumStops + two StopColor + two StopPos
+  Packed(w.data, 0);
+  Packed(w.data, 5);
   Packed(w.data, 0b1110);
   Packed(w.data, 2);
   w.data.push_back(2);
@@ -165,35 +161,33 @@ Bytes SampleScene() {
   Packed(w.data, w.Flt(1.0f));
 
   w.Object("XuiText", 0x8);
-  Packed(w.data, 1);  // the label's properties (bag 0 is the canvas's)
+  Packed(w.data, 1);
 
-  // Named frames and timelines of the canvas.
   Packed(w.name, w.Str("Show"));
   Packed(w.name, 0);
-  w.name.push_back(1);  // stop
+  w.name.push_back(1);
   Packed(w.name, w.Str("Hide"));
   Packed(w.name, 10);
-  w.name.push_back(4);  // go to and stop
+  w.name.push_back(4);
   Packed(w.name, w.Str("Show"));
-  Packed(w.data, 2);  // named frames
-  Packed(w.data, 0);
-  Packed(w.data, 2);  // timelines
-
-  // label.Opacity: XuiElement is class 1 of [XuiText, XuiElement].
-  Packed(w.data, w.Str("label"));
-  Packed(w.data, 1);
-  w.data.push_back(1);  // depth 1
-  w.data.push_back(1);
-  w.data.push_back(6);  // Opacity
   Packed(w.data, 2);
   Packed(w.data, 0);
-  // fig.Fill.FillColor.
+  Packed(w.data, 2);
+
+  Packed(w.data, w.Str("label"));
+  Packed(w.data, 1);
+  w.data.push_back(1);
+  w.data.push_back(1);
+  w.data.push_back(6);
+  Packed(w.data, 2);
+  Packed(w.data, 0);
+
   Packed(w.data, w.Str("fig"));
   Packed(w.data, 1);
-  w.data.push_back(2);  // depth 2
-  w.data.push_back(0);  // XuiFigure
-  w.data.push_back(1);  // Fill
-  w.data.push_back(1);  // FillColor
+  w.data.push_back(2);
+  w.data.push_back(0);
+  w.data.push_back(1);
+  w.data.push_back(1);
   Packed(w.data, 1);
   Packed(w.data, 2);
 
@@ -201,16 +195,16 @@ Bytes SampleScene() {
   Packed(w.keyp, w.Flt(1.0f));
   Packed(w.keyp, w.Col(0xFF1CB61C));
   Packed(w.keyd, 0);
-  w.keyd.push_back(0);  // linear
+  w.keyd.push_back(0);
   Packed(w.keyd, 0);
   Packed(w.keyd, 10);
-  w.keyd.push_back(2);  // ease
+  w.keyd.push_back(2);
   w.keyd.push_back(uint8_t(-100));
   w.keyd.push_back(100);
   w.keyd.push_back(0);
   Packed(w.keyd, 1);
   Packed(w.keyd, 5);
-  w.keyd.push_back(1);  // none
+  w.keyd.push_back(1);
   Packed(w.keyd, 2);
   return w.Build();
 }
@@ -221,7 +215,7 @@ float FloatOf(const Value* v) {
   return *v->get<float>();
 }
 
-}  // namespace
+}
 
 TEST_CASE("XUIZ packages find files by path, ignoring case and separator", "[xui]") {
   std::string error;
@@ -289,7 +283,6 @@ TEST_CASE("XUR v8 scenes decode elements, compounds and shared properties", "[xu
   REQUIRE((*stops)->size() == 2);
   CHECK((*stops)->at(1).get<Color>()->argb == 0xFF77BA0F);
 
-  // Shared properties are the same bag, not a copy.
   CHECK(root.children[2].props == label.props);
 }
 
@@ -339,14 +332,13 @@ TEST_CASE("XUR v8 reading fails on truncation and on classes the schema lacks", 
 }
 
 TEST_CASE("XUR v8 skips properties past a class's known list", "[xui]") {
-  // A property bit past XuiGroup's (empty) list.
   XurWriter w;
   w.Object("XuiGroup", 0x1);
   Packed(w.data, 2);
-  Packed(w.data, 0b1);  // XuiElement: Id
+  Packed(w.data, 0b1);
   Packed(w.data, w.Str("btn"));
   Packed(w.data, 0b1);
-  Packed(w.data, 0x123);  // the unknown property
+  Packed(w.data, 0x123);
   std::string error;
   auto doc = ParseXur(w.Build(), &error);
   INFO(error);
@@ -385,7 +377,7 @@ TEST_CASE("SystemUpdate keeps a module's XUIZ resources by module/resource", "[x
   REQUIRE(update.AddModule("hud", XexWithResource("hud", Xuiz({{"a.xur", "x"}}), 0), &error));
   REQUIRE(update.Find("HUD/hud"));
   CHECK(update.Find("hud/hud")->Contains("A.XUR"));
-  // Non-XUIZ resources (icons, XDBF) are not packages.
+
   REQUIRE(update.AddModule("xam", XexWithResource("icon", Bytes{1, 2, 3, 4}, 0), &error));
   CHECK_FALSE(update.Find("xam/icon"));
 }
@@ -400,14 +392,13 @@ TEST_CASE("The guide bundle carries the system modules a title embeds", "[xui]")
   auto read = SystemUpdate::ReadBundle(bundle, &error);
   REQUIRE(read);
   CHECK(*read == modules);
-  // The guide needs xam/shrdres too: a bundle without it is refused.
+
   CHECK_FALSE(SystemUpdate::FromModules(*read, &error));
   CHECK(error.find("xam/shrdres") != std::string::npos);
   modules["xam"] = XexWithResource("shrdres", Xuiz({{"c.png", "z"}}), 0);
-  // One resource per module in this synthetic XEX, so xam/skin goes missing.
+
   CHECK_FALSE(SystemUpdate::FromModules(modules, &error));
 
-  // Truncated or foreign data is refused, never read past its end.
   for (size_t cut : {size_t(0), size_t(5), bundle.size() / 2, bundle.size() - 1}) {
     INFO("cut " << cut);
     CHECK_FALSE(SystemUpdate::ReadBundle(std::span(bundle).first(cut), &error));
@@ -419,12 +410,10 @@ TEST_CASE("The guide bundle carries the system modules a title embeds", "[xui]")
 
 TEST_CASE("Encrypted XEXs are refused", "[xui]") {
   std::string error;
-  CHECK_FALSE(ReadXexResources(XexWithResource("hud", Bytes{}, 0, /*encryption=*/1), &error));
+  CHECK_FALSE(ReadXexResources(XexWithResource("hud", Bytes{}, 0, 1), &error));
   CHECK(error.find("encrypted") != std::string::npos);
 }
 
-// Local only: REXGLUE_SYSTEM_UPDATE names the owner's $SystemUpdate folder
-// (dashboard 2.0.17559). Decodes every scene the guide uses.
 TEST_CASE("The console's own guide scenes decode", "[xui][local]") {
   const char* path = std::getenv("REXGLUE_SYSTEM_UPDATE");
   if (!path || !*path) {
@@ -453,8 +442,7 @@ TEST_CASE("The console's own guide scenes decode", "[xui][local]") {
     REQUIRE(package);
     REQUIRE(package->Contains(scene));
   }
-  // Every scene in those packages except the Kinect ones (nuihud, Nui*),
-  // whose ControlPack classes the guide does not use.
+
   int decoded = 0;
   for (const char* package_name : {"hud/hud", "huduiskin/skin", "xam/xam", "gamerprofile/gp"}) {
     for (const Package::Entry& entry : update->Find(package_name)->entries()) {
@@ -492,6 +480,6 @@ TEST_CASE("The console's system update round-trips through a guide bundle", "[xu
   INFO(error);
   REQUIRE(update);
   CHECK(update->Find("hud/hud")->Contains("GuideMain.xur"));
-  // 2.0.17559 carries its light Segoe in the package (RG-GDK-061).
+
   CHECK_FALSE(update->Font("SegoeXbox-Light").empty());
 }

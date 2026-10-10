@@ -6,9 +6,7 @@
 #include <rex/ui/xui/runtime.h>
 
 namespace rex::ui::guide {
-// A console message-box scene without runtime/guest dependencies. The caller
-// owns the skin document until this object is destroyed and supplies rendering,
-// input, sounds and actions. Creation fails if the skin lacks the required controls.
+
 class MessageBoxScene {
  public:
   MessageBoxScene(const MessageBoxScene&) = delete;
@@ -35,4 +33,4 @@ class MessageBoxScene {
   std::vector<xui::Element*> choices_;
   size_t focused_ = 0;
 };
-}  // namespace rex::ui::guide
+}

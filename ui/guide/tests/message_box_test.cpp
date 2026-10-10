@@ -14,7 +14,7 @@ TEST_CASE("Both private Guide skins host source and recovery message boxes",
   const bool original_xbox = GENERATE(false, true);
   const auto presentation = original_xbox ? rex::ui::guide::GuidePresentation::OriginalXbox
                                           : rex::ui::guide::GuidePresentation::Xbox360;
-  // A title build's embedded Xbox 360 bundle stands in for a system update.
+
   const char* bundle = original_xbox ? nullptr : std::getenv("REXGLUE_GUIDE_BUNDLE");
   const char* asset_variable = original_xbox ? "REXGLUE_GUIDE_FLASH" : "REXGLUE_SYSTEM_UPDATE";
   const char* path = std::getenv(asset_variable);
@@ -58,7 +58,7 @@ TEST_CASE("Both private Guide skins host source and recovery message boxes",
   REQUIRE(downloads);
   downloads->Update({});
   CHECK(downloads->size() == 0);
-  // Initial zero rows must still remove the notification page's controls.
+
   for (const char* id :
        {"chkShow", "chkSound", "chkShowMovies", "chkShowIPTV", "labelSoundDisabled", "XuiLabel2"}) {
     if (auto* control = downloads->root().FindById(id))

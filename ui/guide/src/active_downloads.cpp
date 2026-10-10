@@ -65,4 +65,4 @@ void ActiveDownloadsScene::Activate() {
     activities_[focused_].cancel();
   }
 }
-}  // namespace rex::ui::guide
+}

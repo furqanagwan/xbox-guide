@@ -235,7 +235,7 @@ std::string InlineText(std::string_view text) {
   return plain;
 }
 
-}  // namespace
+}
 
 std::string PlainReleaseNotes(std::string_view markdown) {
   if (markdown.starts_with("\xEF\xBB\xBF")) {
@@ -357,4 +357,4 @@ bool RollBackAppUpdate(std::string* error) {
   return StartHelper(true, error);
 }
 
-}  // namespace rex::ui::guide
+}

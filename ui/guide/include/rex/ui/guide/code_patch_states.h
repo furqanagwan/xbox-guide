@@ -14,10 +14,8 @@
 
 namespace rex::ui::guide {
 
-/// Sets each switchable patch's flag from code_patch_states ("Name=1;...");
-/// patches it does not name keep their compiled-in default.
 void ApplySavedCodePatches(const PPCSwitchablePatch* patches);
-/// code_patch_states for the patches' current flags.
+
 std::string SaveCodePatchStates(const PPCSwitchablePatch* patches);
 
-}  // namespace rex::ui::guide
+}
