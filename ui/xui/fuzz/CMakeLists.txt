@@ -8,6 +8,11 @@ add_executable(xui_fuzzer xui_fuzzer.cpp)
 target_link_libraries(xui_fuzzer PRIVATE xbox::ui_core)
 target_link_options(xui_fuzzer PRIVATE -fsanitize=fuzzer)
 
+foreach(_target xui_fuzz_seeds xui_fuzzer)
+    add_custom_command(TARGET ${_target} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${XBOX_ASAN_RUNTIME}" $<TARGET_FILE_DIR:${_target}>)
+endforeach()
+
 set(_seeds ${CMAKE_CURRENT_BINARY_DIR}/seeds)
 set(_corpus ${CMAKE_CURRENT_BINARY_DIR}/corpus)
 set(_artifacts ${CMAKE_CURRENT_BINARY_DIR}/artifacts)

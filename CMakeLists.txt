@@ -14,8 +14,16 @@ set(XBOX_UI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ui")
 
 if(XBOX_BUILD_CORE)
     if(XBOX_BUILD_FUZZERS)
+        set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
         add_compile_options(-fsanitize=address,fuzzer-no-link -fno-omit-frame-pointer)
+        add_compile_definitions(_DISABLE_STRING_ANNOTATION _DISABLE_VECTOR_ANNOTATION)
         add_link_options(-fsanitize=address)
+        execute_process(COMMAND "${CMAKE_CXX_COMPILER}" -print-resource-dir
+            OUTPUT_VARIABLE XBOX_CLANG_RESOURCE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+        set(XBOX_ASAN_RUNTIME "${XBOX_CLANG_RESOURCE_DIR}/lib/windows/clang_rt.asan_dynamic-x86_64.dll")
+        if(NOT EXISTS "${XBOX_ASAN_RUNTIME}")
+            message(FATAL_ERROR "AddressSanitizer runtime not found: ${XBOX_ASAN_RUNTIME}")
+        endif()
     endif()
     include(cmake/dependencies.cmake)
     add_library(xbox_ui_core STATIC
