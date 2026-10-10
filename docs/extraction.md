@@ -14,7 +14,7 @@ The SDK keeps its CLI registration and title embedding helper as adapters.
 ResolveFile was split from runtime.cpp into resolve_file.cpp so the reusable
 scene runtime can link without the SDK's system-update loader. Its behavior
 is unchanged. Standalone and SDK consumers are separate build paths; a title
-using the SDK must not also link a second copy of xbox_guide::core.
+using the SDK must not also link a second copy of xbox::ui_core.
 
 The complete Guide still depends on ReXGlue input, achievements, content,
 settings, UI dialogs and audio. The standalone scene layer is reusable now;
@@ -49,7 +49,7 @@ both pass 51 cases and 583 assertions, with six private-asset cases skipped
 (57 cases discovered). The title application source compilation target also
 builds. Broader SDK validation is recorded in its extraction document and
 release evidence. The added Windows CI workflow tests dependency fetching on
-a fresh runner. [CI at 62267d4](https://github.com/furqanagwan/xbox-guide/actions/runs/37526640817)
+a fresh runner. [CI at 62267d4](https://github.com/furqanagwan/xbox/actions/runs/37526640817)
 passed on a fresh Windows runner, fetching dependencies and building/testing
 both configurations without an SDK checkout.
 
@@ -63,10 +63,10 @@ epic retains that gate; no compatibility claims for another SDK are made.
 
 | Original SDK issue | Guide issue | State | Comments preserved |
 | --- | --- | --- | --- |
-| [#127](https://github.com/furqanagwan/rexglue-sdk/issues/127) | [#1](https://github.com/furqanagwan/xbox-guide/issues/1) | open | 0 |
-| [#132](https://github.com/furqanagwan/rexglue-sdk/issues/132) | [#2](https://github.com/furqanagwan/xbox-guide/issues/2) | closed | 0 |
-| [#143](https://github.com/furqanagwan/rexglue-sdk/issues/143) | [#3](https://github.com/furqanagwan/xbox-guide/issues/3) | closed | 0 |
-| [#145](https://github.com/furqanagwan/rexglue-sdk/issues/145) | [#4](https://github.com/furqanagwan/xbox-guide/issues/4) | closed | 0 |
-| [#153](https://github.com/furqanagwan/rexglue-sdk/issues/153) | [#5](https://github.com/furqanagwan/xbox-guide/issues/5) | closed | 1 |
-| [#161](https://github.com/furqanagwan/rexglue-sdk/issues/161) | [#6](https://github.com/furqanagwan/xbox-guide/issues/6) | closed | 0 |
-| [#166](https://github.com/furqanagwan/rexglue-sdk/issues/166) | [#7](https://github.com/furqanagwan/xbox-guide/issues/7) | closed | 4 |
+| [#127](https://github.com/furqanagwan/rexglue-sdk/issues/127) | [#1](https://github.com/furqanagwan/xbox/issues/1) | open | 0 |
+| [#132](https://github.com/furqanagwan/rexglue-sdk/issues/132) | [#2](https://github.com/furqanagwan/xbox/issues/2) | closed | 0 |
+| [#143](https://github.com/furqanagwan/rexglue-sdk/issues/143) | [#3](https://github.com/furqanagwan/xbox/issues/3) | closed | 0 |
+| [#145](https://github.com/furqanagwan/rexglue-sdk/issues/145) | [#4](https://github.com/furqanagwan/xbox/issues/4) | closed | 0 |
+| [#153](https://github.com/furqanagwan/rexglue-sdk/issues/153) | [#5](https://github.com/furqanagwan/xbox/issues/5) | closed | 1 |
+| [#161](https://github.com/furqanagwan/rexglue-sdk/issues/161) | [#6](https://github.com/furqanagwan/xbox/issues/6) | closed | 0 |
+| [#166](https://github.com/furqanagwan/rexglue-sdk/issues/166) | [#7](https://github.com/furqanagwan/xbox/issues/7) | closed | 4 |

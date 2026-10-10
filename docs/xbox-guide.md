@@ -2,7 +2,7 @@
 
 The Xbox 360 guide over a running title, built from the console's own scenes
 ([ADR-011](adr/ADR-011-xbox-guide-from-system-xui.md),
-[RG-GDK-041](https://github.com/furqanagwan/xbox-guide/issues/1)).
+[RG-GDK-041](https://github.com/furqanagwan/xbox/issues/1)).
 
 Status: implemented in three parts: format layer, XUI runtime, guide. Checked
 with Quantum of Solace (GDK Release, NVIDIA, 2026-09-30) through scripted
@@ -393,7 +393,7 @@ in two bytes, or `0xFF` followed by 32 bits.
   level, then its keyframe count and first `KEYD` index. A leaf element with
   flag 4 has no timeline count.
 
-The schema (`src/ui/xui/schema.cpp`) lists only the classes the guide's scenes
+The schema (`ui/xui/src/schema.cpp`) lists only the classes the guide's scenes
 use. Mask bits past a class's known properties are read as one packed value and
 ignored, since every non-compound type except bool is one packed value (bool is
 a byte, which reads the same). One finding: `AccountManagementNavButton` derives

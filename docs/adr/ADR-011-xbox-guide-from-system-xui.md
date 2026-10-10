@@ -1,7 +1,7 @@
 # ADR-011: The Xbox guide runs the console's own XUI scenes
 
 Date: 2026-09-30. Status: implemented (format layer, runtime, guide); owner pad session pending in
-[RG-GDK-041](https://github.com/furqanagwan/xbox-guide/issues/1).
+[RG-GDK-041](https://github.com/furqanagwan/xbox/issues/1).
 
 ## Context
 
