@@ -19,6 +19,7 @@
 #include <rex/ui/guide/guide_layout.h>
 #include <rex/ui/guide/xbox_guide.h>
 #include <rex/ui/xui/document.h>
+#include <rex/ui/xui/renderer.h>
 #include <rex/ui/xui/text_scroll.h>
 #include <rex/ui/xui/runtime.h>
 #include <rex/ui/xui/system_update.h>
@@ -366,6 +367,18 @@ TEST_CASE("A menu that fits its scene is neither scrolled nor clipped", "[xui][g
   rex::ui::guide::ScrollMenuTo(scene->FindById("b"));
   CHECK_FALSE(scene->GetBool("ClipChildren"));
   CHECK(scene->FindById("b")->GetVector("Position").y == Approx(20.0f));
+}
+
+TEST_CASE("A disc's soft edge keeps the console's width on screen", "[xui]") {
+  const GradientSpan console = EdgeFadeOnScreen({0.8f, 1.0f}, 1.0f);
+  CHECK(console.start == Approx(0.8f));
+  CHECK(console.end == Approx(1.0f));
+  const GradientSpan at_4k = EdgeFadeOnScreen({0.8f, 1.0f}, 3.0f);
+  CHECK((at_4k.start + at_4k.end) / 2 == Approx(0.9f));
+  CHECK(at_4k.end - at_4k.start == Approx(0.2f / 3.0f));
+  const GradientSpan below_720p = EdgeFadeOnScreen({0.421f, 0.561f}, 0.5f);
+  CHECK(below_720p.start == Approx(0.421f));
+  CHECK(below_720p.end == Approx(0.561f));
 }
 
 TEST_CASE("The XUI ease curve", "[xui]") {

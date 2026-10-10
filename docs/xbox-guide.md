@@ -286,6 +286,19 @@ is saved to the title's config file straight away.
   so text and notifications are sharp at 4K. The console's images (PNG) and the
   title's achievement icons (64 x 64) have no higher-resolution source and are
   scaled up with linear filtering.
+  - The host lays ImGui out in logical units (1280 x 720 at 4K with 300%
+    Windows scaling) and the draw lists are stretched to the physical pixels.
+    The renderer is told the pixels per unit (`RenderResources::pixels_per_point`,
+    the window's DPI over 96) and slices radial gradients for the physical
+    pixels.
+  - The skin draws its discs (the radio buttons' ring, fill and dot) as radial
+    gradients that fade to transparent over their last 20% (14% for the dot):
+    about 1.5 pixels of soft edge at 720p. Scaled to 4K that fade became a
+    5-pixel blur. A radial gradient whose last stop fades its colour out keeps
+    the fade's width on screen, around the same middle (`EdgeFadeOnScreen`), so
+    the discs are as crisp as on the console. Measured on the Resolution page
+    at 3840 x 2160 and 300%: the ring's edges went from 6-pixel ramps to 1–2
+    pixels.
 
 ## Menu inventory
 
