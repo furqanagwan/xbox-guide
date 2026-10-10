@@ -7,11 +7,16 @@ endif()
 
 option(XBOX_BUILD_CORE "Build the reusable XUI scene library" ${PROJECT_IS_TOP_LEVEL})
 option(XBOX_BUILD_TESTS "Build standalone synthetic tests" ${PROJECT_IS_TOP_LEVEL})
+option(XBOX_BUILD_FUZZERS "Build the libFuzzer XUI target with AddressSanitizer (Clang, Release)" OFF)
 option(XBOX_FETCH_DEPENDENCIES "Fetch pinned fmt, ImGui and Catch2 when not supplied" OFF)
 
 set(XBOX_UI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ui")
 
 if(XBOX_BUILD_CORE)
+    if(XBOX_BUILD_FUZZERS)
+        add_compile_options(-fsanitize=address,fuzzer-no-link -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=address)
+    endif()
     include(cmake/dependencies.cmake)
     add_library(xbox_ui_core STATIC
         ui/xui/src/package.cpp
@@ -35,6 +40,10 @@ if(XBOX_BUILD_CORE)
     if(XBOX_BUILD_TESTS)
         enable_testing()
         add_subdirectory(tests/standalone)
+    endif()
+    if(XBOX_BUILD_FUZZERS)
+        enable_testing()
+        add_subdirectory(ui/xui/fuzz)
     endif()
 elseif(XBOX_BUILD_TESTS)
     message(FATAL_ERROR "Standalone tests require XBOX_BUILD_CORE=ON")
