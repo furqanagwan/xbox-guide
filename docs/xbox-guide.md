@@ -247,10 +247,11 @@ is saved to the title's config file straight away.
 
 | Page | Scene | Controls | Setting |
 | --- | --- | --- | --- |
-| Preferences | `Options` (`OptionsEmulator` with the BC HUD) | Notifications, Volume (the Voice entry), Vibration, Resolution (a copy of Vibration; with the BC HUD it is under Xbox Settings instead). Online Status, Family Timer and Word Registration are removed. | |
+| Preferences | `Options` (`OptionsEmulator` with the BC HUD) | Notifications, Volume (the Voice entry), Audio Output (added below Volume when the host lists outputs), Vibration, Resolution (a copy of Vibration; with the BC HUD it is under Xbox Settings instead). Online Status, Family Timer and Word Registration are removed. | |
 | Xbox Settings (BC HUD) | `XboxOneXSettings` | Optimize game for: Graphics or Performance. The pane's first line, "Changing this setting will end your current session.", reads that the setting is used at the next start. | Graphics: `resolution_match_display`; Performance: `resolution_scale` 1; next launch |
 | Notifications | `OptionsNotifications` | Show Notifications; Play Sound (disabled while Show is off) | `notifications_show`, `notifications_sound`: the unlock popup and its sound |
 | Volume | `OptionsVoice` | Game Volume slider, steps of 10, left and right; the Kinect checkbox as Mute When Minimized; voice and output hidden | `audio_volume`, `audio_mute_minimized`, applied live |
+| Audio Output | `OptionsVoice`'s Play Through radio list, rows added past three | Windows Default, then each active Windows output (up to seven) by its device name, the adapter in brackets dropped unless two share a name; the panel shows the focused output's full name. A chosen output that is unplugged shows as Last Chosen (Not Connected) and the game plays through the default meanwhile | `audio_output_device` (endpoint ID, empty for the default), applied live: the game's sound and the guide's own sounds move at once |
 | Vibration | `OptionsController` | Enable Vibration | `vibration`, applied live |
 | Resolution | `OptionsVoice`'s output radio list, one button added | Original (the default), 2x, 3x and Match Display, the last three marked Experimental | `resolution_scale`, `resolution_match_display`; next launch |
 | Patches, Mods | `OptionsNotifications` checkboxes, one copy per patch | The title's switchable code patches of that category (`patch`, `mod`) | `code_patch_states`, applied live |
@@ -299,6 +300,15 @@ is saved to the title's config file straight away.
     the discs are as crisp as on the console. Measured on the Resolution page
     at 3840 x 2160 and 300%: the ring's edges went from 6-pixel ramps to 1–2
     pixels.
+  - The button letters (A, B, X, Y) are drawn as one glyph quad at the exact
+    centre of their disc. `ImDrawList::AddText` truncates its position to whole
+    display units, three pixels each at 300%, which left the B 2.5 pixels left
+    and both letters 2.5 pixels high.
+  - The tab label column (`Blade_Focus`, from y 135) starts a unit inside the
+    centre blade's visible top and left edges. Under a pixel at 720p, at 4K
+    the blade showed through as a 2-pixel white line above and beside the
+    column; the column now starts a unit up and left (`CoverBladeEdge`; the
+    360 HUD only).
 
 ## Menu inventory
 

@@ -280,13 +280,27 @@ bool DrawButtonGlyph(ImDrawList& list, std::string_view path,
   if (!g) {
     return true;
   }
-  // The centre of its ink on the disc's centre. AddText binds the font's
-  // texture itself, whatever the list drew before.
+  // The centre of its ink on the disc's centre, placed at the exact position:
+  // AddText truncates to whole display units, three pixels each at 300%.
   const float k = size / baked->Size;
   const ImVec2 at(centre.x - (g->X0 + g->X1) / 2.0f * k, centre.y - (g->Y0 + g->Y1) / 2.0f * k);
-  list.AddText(font, size, at, IM_COL32(0xF5, 0xF5, 0xF5, int(alpha * 255.0f + 0.5f)),
-               glyph->letter);
+  list.AddImage(font->OwnerAtlas->TexRef, ImVec2(at.x + g->X0 * k, at.y + g->Y0 * k),
+                ImVec2(at.x + g->X1 * k, at.y + g->Y1 * k), ImVec2(g->U0, g->V0),
+                ImVec2(g->U1, g->V1), IM_COL32(0xF5, 0xF5, 0xF5, int(alpha * 255.0f + 0.5f)));
   return true;
+}
+
+// The tab label column (Blade_Focus) starts a unit inside the centre blade's
+// top and left edges. At 720p that is under a pixel; at 4K it showed as a
+// white line above and beside the column.
+void CoverBladeEdge(xui::Element* column) {
+  if (!column) {
+    return;
+  }
+  const xui::Vec3 p = column->GetVector("Position");
+  column->Set("Position", xui::Value{xui::Vec3{p.x - 1.0f, p.y - 1.0f, p.z}});
+  column->Set("Width", xui::Value{column->width() + 1.0f});
+  column->Set("Height", xui::Value{column->height() + 1.0f});
 }
 
 // The letters the legend groups and visuals lay over the button glyphs, for
@@ -817,6 +831,9 @@ void XboxGuide::ConfigureMain() {
     if (xui::Element* label = main_->FindById(id)) {
       label->Suppress();
     }
+  }
+  if (!assets_->emulator_layout) {
+    CoverBladeEdge(main_->FindById("Blade_Focus"));
   }
   if (assets_->emulator_layout) {
     // Games has Achievements and Awards; Manage Game (downloadable content),

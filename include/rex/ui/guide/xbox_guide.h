@@ -22,6 +22,7 @@
 
 #include <imgui.h>
 
+#include <rex/audio/audio_outputs.h>
 #include <rex/cvar.h>
 #include <rex/image_info.h>
 #include <rex/ui/guide/code_patch_states.h>
@@ -193,6 +194,9 @@ struct GuideHost {
   std::function<void()> restart_title;
   /// The draw resolution scale that matches the display (3 for 4K).
   int display_scale = 1;
+  /// The Windows audio outputs the game can play through, for Audio Output
+  /// (the audio_output_device setting); null hides the page.
+  std::function<std::vector<audio::AudioOutput>()> audio_outputs;
   /// Writes changed settings to the title's config file.
   std::function<void()> save_settings;
   /// Host copy/install jobs, newest first; read only on the UI thread.
@@ -267,6 +271,7 @@ class XboxGuide final : public ImGuiDialog {
   void OpenVolume();
   void OpenNotifications();
   void OpenResolution();
+  void OpenAudioOutput();
   /// Settings > Xbox Settings, emulator layout: the render resolution on the
   /// XboxOneXSettings scene's Graphics and Performance choice.
   void OpenXboxSettings();
