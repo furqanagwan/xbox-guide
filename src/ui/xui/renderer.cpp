@@ -195,9 +195,15 @@ class Renderer {
     return points;
   }
 
-  static int RadialSteps(const Affine& m, float w, float h) {
+  float PixelsPerUnit(const Affine& m) const {
+    return m.UniformScale() * resources_.pixels_per_point;
+  }
+
+  int RadialSteps(const Affine& m, float w, float h) const {
     const ImVec2 o = m.Apply(0, 0), x = m.Apply(w, 0), y = m.Apply(0, h);
-    const float side = std::max(std::hypot(x.x - o.x, x.y - o.y), std::hypot(y.x - o.x, y.y - o.y));
+    const float side =
+        std::max(std::hypot(x.x - o.x, x.y - o.y), std::hypot(y.x - o.x, y.y - o.y)) *
+        resources_.pixels_per_point;
     return std::clamp(int(std::ceil(side / kRadialStepPixels)), kRadialMinSteps, kRadialMaxSteps);
   }
 
@@ -260,6 +266,15 @@ class Renderer {
         const float cy = (0.5f - (-tx * std::sin(radians) + ty * std::cos(radians)) / sy) * h;
         const float rx = 0.5f * w / sx;
         const float ry = 0.5f * h / sy;
+        if (stops.size() >= 2) {
+          Stop& inner = stops[stops.size() - 2];
+          Stop& outer = stops.back();
+          if ((outer.argb >> 24) == 0 && (inner.argb & 0xFFFFFF) == (outer.argb & 0xFFFFFF)) {
+            const GradientSpan fade = EdgeFadeOnScreen({inner.pos, outer.pos}, PixelsPerUnit(m));
+            inner.pos = fade.start;
+            outer.pos = fade.end;
+          }
+        }
         FillPolygon(
             m, outline,
             [&](ImVec2 p) {
@@ -594,6 +609,15 @@ class Renderer {
 };
 
 }  // namespace
+
+GradientSpan EdgeFadeOnScreen(GradientSpan fade, float pixels_per_unit) {
+  if (pixels_per_unit <= 1.0f) {
+    return fade;
+  }
+  const float middle = (fade.start + fade.end) / 2;
+  const float half = (fade.end - fade.start) / (2 * pixels_per_unit);
+  return {middle - half, middle + half};
+}
 
 TextScrollFrame TextScrollAt(double elapsed, float overflow, float speed) {
   constexpr double kHoldTop = 2.5, kHoldBottom = 2.0, kFade = 0.6;

@@ -145,6 +145,7 @@ void GuideNotificationDialog::OnDraw(ImGuiIO& io) {
   const float scale = std::min(io.DisplaySize.x / kSceneWidth, io.DisplaySize.y / kSceneHeight);
   const ImVec2 origin((io.DisplaySize.x - kSceneWidth * scale) / 2 + kPopupX * scale,
                       (io.DisplaySize.y - kSceneHeight * scale) / 2 + kPopupY * scale);
+  render_.pixels_per_point = imgui_drawer()->PixelsPerPoint();
   xui::Render(ImGui::GetForegroundDrawList(), *scene_, origin, scale, 1.0f, render_);
 
   if (!popup_->playing()) {

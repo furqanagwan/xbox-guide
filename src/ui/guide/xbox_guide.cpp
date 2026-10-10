@@ -1115,6 +1115,7 @@ void XboxGuide::OnDraw(ImGuiIO& io) {
   const float scale = std::min(io.DisplaySize.x / kSceneWidth, io.DisplaySize.y / kSceneHeight);
   const ImVec2 origin((io.DisplaySize.x - kSceneWidth * scale) / 2,
                       (io.DisplaySize.y - kSceneHeight * scale) / 2);
+  render_.pixels_per_point = imgui_drawer()->PixelsPerPoint();
   xui::Render(ImGui::GetForegroundDrawList(), *backdrop_, origin, scale, 1.0f, render_);
 
   if (closing_ && !hud_root_->playing() && !tabs_->playing() && dim_ == 0.0f) {

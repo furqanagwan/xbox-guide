@@ -64,7 +64,22 @@ struct RenderResources {
   /// across frames; null turns the scrolling off.
   std::shared_ptr<std::unordered_map<const Element*, TextScroll>> text_scroll =
       std::make_shared<std::unordered_map<const Element*, TextScroll>>();
+  /// Physical pixels per draw list unit: the window's DPI scale when the host
+  /// lays ImGui out in logical units (3 for 4K at 300% scaling). Gradients
+  /// are subdivided and soft edges sized for the physical pixels.
+  float pixels_per_point = 1.0f;
 };
+
+/// The span of a gradient's last stops, as positions along the gradient.
+struct GradientSpan {
+  float start = 0;
+  float end = 0;
+};
+/// A radial gradient that ends by fading its colour out is the skin's soft
+/// edge for a disc (the radio buttons' discs and dot): about 1.5 pixels at the
+/// console's 720p. Drawn `pixels_per_unit` larger, the fade keeps that width
+/// on screen, around the same middle, instead of growing into a blur.
+GradientSpan EdgeFadeOnScreen(GradientSpan fade, float pixels_per_unit);
 
 /// Draws `root` with scene unit (x, y) at screen (origin + scale * (x, y)).
 void Render(ImDrawList* list, const Element& root, ImVec2 origin, float scale, float opacity,
