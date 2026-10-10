@@ -9,12 +9,15 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <cfloat>
 #include <cstdlib>
 #include <filesystem>
 #include <iterator>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <imgui.h>
 
 #include <rex/ui/guide/guide_layout.h>
 #include <rex/ui/guide/xbox_guide.h>
@@ -363,6 +366,53 @@ TEST_CASE("A menu that fits its scene is neither scrolled nor clipped", "[xui][g
   rex::ui::guide::ScrollMenuTo(scene->FindById("b"));
   CHECK_FALSE(scene->GetBool("ClipChildren"));
   CHECK(scene->FindById("b")->GetVector("Position").y == Approx(20.0f));
+}
+
+TEST_CASE("A long button legend pushes the next one along instead of running into it",
+          "[xui][guide]") {
+  auto at = [](float x) { return Value{Vec3{x, 0.0f, 0.0f}}; };
+  auto legend_text = [&](std::string id, float x) {
+    return MakeNode("XuiText", {{"Id", Str(std::move(id))},
+                                {"Position", at(x)},
+                                {"Width", Value{64.0f}},
+                                {"PointSize", Value{10.0f}}});
+  };
+  Document doc;
+  doc.root = MakeNode("XuiCanvas", {},
+                      {MakeNode("XuiGroup", {{"Id", Str("AButton")}, {"Position", at(137.0f)}}),
+                       legend_text("AText", 161.0f),
+                       MakeNode("XuiGroup", {{"Id", Str("BButton")}, {"Position", at(224.0f)}}),
+                       legend_text("BText", 249.0f)});
+  SceneContext context;
+  auto root = Element::Create(doc.root, context);
+  ImGuiContext* imgui = ImGui::CreateContext();
+  ImFont* font = ImGui::GetIO().Fonts->AddFontDefault();
+  unsigned char* pixels = nullptr;
+  int width = 0, height = 0;
+  ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+
+  root->FindById("BText")->SetText("Back");
+  SECTION("A short label keeps the console's spacing") {
+    root->FindById("AText")->SetText("Select");
+    rex::ui::guide::LayOutLegends(*root, doc.root, font);
+    CHECK(root->FindById("BButton")->GetVector("Position").x == Approx(224.0f));
+    CHECK(root->FindById("BText")->GetVector("Position").x == Approx(249.0f));
+  }
+  SECTION("A long label moves B past its end, and back when it is short again") {
+    root->FindById("AText")->SetText("Check for Updates Again");
+    rex::ui::guide::LayOutLegends(*root, doc.root, font);
+    const float a_end =
+        161.0f +
+        font->CalcTextSizeA(10.0f * kPointToSceneUnits, FLT_MAX, 0.0f, "Check for Updates Again").x;
+    CHECK(root->FindById("BButton")->GetVector("Position").x > a_end);
+    CHECK(root->FindById("BText")->GetVector("Position").x -
+              root->FindById("BButton")->GetVector("Position").x ==
+          Approx(25.0f));
+    root->FindById("AText")->SetText("Select");
+    rex::ui::guide::LayOutLegends(*root, doc.root, font);
+    CHECK(root->FindById("BButton")->GetVector("Position").x == Approx(224.0f));
+  }
+  ImGui::DestroyContext(imgui);
 }
 
 TEST_CASE("A disc's soft edge keeps the console's width on screen", "[xui]") {

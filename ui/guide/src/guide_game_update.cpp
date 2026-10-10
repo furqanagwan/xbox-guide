@@ -115,8 +115,7 @@ void XboxGuide::ShowGameUpdate() {
   std::string y_action;
   switch (state.status) {
     case AppUpdateStatus::kOff:
-      details =
-          "This build doesn't check for updates: it has no version or release repository set.";
+      details = "Updates aren't available for this game.";
       break;
     case AppUpdateStatus::kChecking:
       details = "Checking for a newer version...";
@@ -145,22 +144,20 @@ void XboxGuide::ShowGameUpdate() {
       break;
     case AppUpdateStatus::kReady:
       details = fmt::format(
-          "Version {} is downloaded and checked. Install it: the game closes, updates and starts "
-          "again. Saves and settings stay.",
+          "Version {} is ready to install. The game will close, update and start again. Your "
+          "saved games and settings will be kept.",
           state.latest_version);
       action = "Install";
       break;
     case AppUpdateStatus::kFailed:
-      details = "The update didn't work:\r\n" + state.error;
+      details = state.error;
       action = "Check Again";
       break;
   }
   if (state.can_roll_back) {
-    details += "\r\n\r\nThe version before the last update is kept; X goes back to it.";
+    details += "\r\n\r\nTo go back to the version you had before, press X.";
   }
-  details +=
-      "\r\n\r\nUpdates come from the game's GitHub releases and never install without "
-      "asking.";
+  details += "\r\n\r\nUpdates never install without asking.";
   if (xui::Element* e = game_update_scene_->FindById("XuiLabel1")) {
     e->SetText(std::move(details));
   }

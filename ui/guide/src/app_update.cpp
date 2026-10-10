@@ -85,11 +85,11 @@ bool CanRollBack(const AppUpdateConfig& config) {
   return fs::is_directory(config.install_folder / "previous", code);
 }
 
-void SetFailed(Updater& updater, std::string error) {
+void SetFailed(Updater& updater, std::string message, std::string_view detail) {
   std::lock_guard lock(updater.mutex);
-  REXLOG_WARN("Game update: {}", error);
+  REXLOG_WARN("Game update: {} ({})", message, detail);
   updater.state.status = AppUpdateStatus::kFailed;
-  updater.state.error = std::move(error);
+  updater.state.error = std::move(message);
   updater.busy = false;
 }
 
@@ -111,7 +111,10 @@ void RunCheck(AppUpdateConfig config, bool use_cache) {
         fmt::format("https://api.github.com/repos/{}/releases?per_page=30", config.repository),
         &error);
     if (!json) {
-      SetFailed(updater, "Couldn't reach GitHub: " + error);
+      SetFailed(updater,
+                "Unable to connect to the update service. Check your network connection and "
+                "try again.",
+                "GitHub: " + error);
       return;
     }
     WriteLine(UpdatesFolder(config) / "last-check.txt", std::to_string(NowSeconds()));
@@ -156,20 +159,23 @@ void RunDownload(AppUpdateConfig config, update::AvailableUpdate available) {
       },
       cancel);
   if (!error.empty()) {
-    SetFailed(updater, "The download failed: " + error);
+    SetFailed(updater, "The download didn't finish. Check your network connection and try again.",
+              error);
     return;
   }
   if (!available.checksums) {
-    SetFailed(updater, "The release has no SHA256SUMS.txt, so the download can't be checked.");
+    SetFailed(updater, "This update can't be checked, so it won't be installed.",
+              "the release has no SHA256SUMS.txt");
     return;
   }
   const auto sums = FetchText(available.checksums->download_url, &error);
   if (!sums || !update::MatchesChecksum(zip, update::ParseChecksums(*sums))) {
-    SetFailed(updater, "The download doesn't match the release's checksum.");
+    SetFailed(updater, "This update didn't download correctly. Try again.",
+              "the download doesn't match the release's checksum");
     return;
   }
   if (!update::UnpackZip(zip, folder / "unpacked", &error)) {
-    SetFailed(updater, error);
+    SetFailed(updater, "This update couldn't be unpacked. Try again.", error);
     return;
   }
   std::lock_guard lock(updater.mutex);
