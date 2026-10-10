@@ -28,16 +28,13 @@ char FoldPathChar(char c) {
   return (c >= 'A' && c <= 'Z') ? char(c - 'A' + 'a') : c;
 }
 
-// XUIZ header: magic, version, package size, reserved, entry table size,
-// entry count. Entries follow at kTableStart; file data starts after the
-// table, entry offsets being relative to it.
-constexpr uint32_t kXuizMagic = 0x5855495A;  // "XUIZ"
+constexpr uint32_t kXuizMagic = 0x5855495A;
 constexpr size_t kTableStart = 0x16;
 
-constexpr uint32_t kXuisMagic = 0x58554953;  // "XUIS"
+constexpr uint32_t kXuisMagic = 0x58554953;
 constexpr size_t kXuisHeaderSize = 12;
 
-}  // namespace
+}
 
 bool SamePath(std::string_view a, std::string_view b) {
   if (a.size() != b.size()) {
@@ -118,7 +115,7 @@ std::optional<std::vector<std::string>> ParseStringTable(std::span<const uint8_t
     }
     return std::nullopt;
   };
-  // Header: magic, version (u16), total size (u32), string count (u16).
+
   if (bytes.size() < kXuisHeaderSize || ReadBe32(bytes.data()) != kXuisMagic) {
     return fail("not a XUIS string table");
   }
@@ -140,4 +137,4 @@ std::optional<std::vector<std::string>> ParseStringTable(std::span<const uint8_t
   return strings;
 }
 
-}  // namespace rex::ui::xui
+}

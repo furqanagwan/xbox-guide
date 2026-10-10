@@ -46,9 +46,6 @@ struct AppUpdateState {
   bool can_roll_back = false;
 };
 
-/// A release's Markdown notes as the guide's plain text: no byte order mark,
-/// heading marks, emphasis or link targets, wrapped lines joined into their
-/// paragraphs or list items, and lines ending in CR LF.
 std::string PlainReleaseNotes(std::string_view markdown);
 
 void ConfigureAppUpdate(const AppUpdateConfig& config);
@@ -59,4 +56,4 @@ void SkipAppUpdate();
 bool InstallAppUpdate(std::string* error);
 bool RollBackAppUpdate(std::string* error);
 
-}  // namespace rex::ui::guide
+}

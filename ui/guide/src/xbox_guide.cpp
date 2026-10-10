@@ -56,41 +56,23 @@ REXCVAR_DEFINE_BOOL(resolution_match_display, false, "GPU",
 namespace rex::ui::guide {
 namespace {
 
-// Entries taken out of the guide for recompiled titles; the scenes still
-// have them. Kept as a list so one can be put back by deleting its line.
 constexpr std::string_view kRemovedEntries[] = {
-    "btnFamilySettings",     // Settings > Family Settings
-    "btnAccountManagement",  // Settings > Account Management
-    "btnKinectTuner",        // Settings > Kinect Tuner
-    "btnShutdown",           // Settings > Turn Off Console
-    "btnConnectToLive",      // Home > Connect to Xbox Live
-    "btnDiscInTray",         // Home > the title, shown disabled
+    "btnFamilySettings", "btnAccountManagement", "btnKinectTuner",
+    "btnShutdown",       "btnConnectToLive",     "btnDiscInTray",
 };
 
-// Home's Xbox Home entry and the Y button end the title, worded as the Xbox
-// One and Series consoles' guide for 360 titles words them: a recompiled title
-// has no dashboard to return to.
 constexpr std::string_view kLeaveGame = "Leave Game";
 constexpr std::string_view kLeaveGameWarning =
     "Are you sure you want to close the game? Any unsaved progress will be lost.";
-// Settings > System Settings opens the console's own settings; the Series
-// consoles' guide calls that entry Xbox One X Settings.
+
 constexpr std::string_view kXboxSettings = "Xbox Settings";
 
-// The Xbox One and Series consoles' guide titles the Home tab with the
-// player's gamertag.
 constexpr std::string_view kHomeTabLabels[] = {"txt_home", "txt_homeSel"};
 
-// The tabs left to right. The backward-compatibility guide has three; in
-// 2.0.17559's, Media (3) is removed and GuideMain's timelines are rewritten to
-// match (UseThreeTabs).
 constexpr int kEmulatorTabs[] = {1, 2, 3};
 constexpr int kTabs[] = {1, 2, 4};
 constexpr int kRemovedTab = 3;
 
-// The legend button glyphs (sharedres A-Button.png to Y-Button.png: 18 x 18,
-// a flat disc of radius 8 centred at (9, 9)) drawn as discs with their letter
-// centred, so they are sharp at 4K: the console's only copies are 18 pixels.
 struct ButtonGlyph {
   std::string_view path;
   const char* letter;
@@ -103,21 +85,17 @@ constexpr ButtonGlyph kButtonGlyphs[] = {
     {"sharedres://Y-Button.png", "Y", 0xE39402},
 };
 
-// The console darkens the title behind the guide to about a quarter of its
-// brightness (measured from a capture of dashboard 2.0.17559). XAM does that
-// in code: no scene draws it. It fades over the backdrop's ClosedToFull
-// (frames 99 to 122) and FullToClosed (123 to 139) animations.
 constexpr float kDimOpacity = 0.75f;
 constexpr double kDimInSeconds = 23 / xui::kFramesPerSecond;
 constexpr double kDimOutSeconds = 16 / xui::kFramesPerSecond;
 
 constexpr float kSceneWidth = 852.0f;
 constexpr float kSceneHeight = 480.0f;
-constexpr uint32_t kXnSysUi = 0x00000009;  // XN_SYS_UI
+constexpr uint32_t kXnSysUi = 0x00000009;
 constexpr std::string_view kAchievementScheme = "achievement://";
-// XDBF achievement flag: shown before it is earned. Without it, secret.
+
 constexpr uint32_t kAchievementShowUnachieved = 0x8;
-// The default gamer picture, in XAM's shared resources.
+
 constexpr std::string_view kDefaultGamerPicture = "sharedres://64_fffe07d10002000000010000.png";
 
 const xui::Node* FindVisual(const xui::Document& skin, std::string_view id) {
@@ -130,7 +108,6 @@ const xui::Node* FindVisual(const xui::Document& skin, std::string_view id) {
 }
 
 std::string FormatCount(std::string format, uint32_t first, uint32_t second) {
-  // XUIS strings use FormatMessage inserts: %1!u! and %2!u!.
   auto replace = [&](std::string_view token, uint32_t value) {
     if (size_t at = format.find(token); at != std::string::npos) {
       format.replace(at, token.size(), std::to_string(value));
@@ -148,12 +125,8 @@ void ForEach(xui::Element* root, const std::function<void(xui::Element*)>& fn) {
   }
 }
 
-// The ring of light's lit quadrant, as the console draws player 1's
-// (measured from a capture of dashboard 2.0.17559).
 constexpr uint32_t kRingOfLightGreen = 0x00ACF124;
 
-// A copy of `figure`'s fill with every gradient stop recoloured to `rgb`,
-// keeping each stop's alpha.
 void TintGradient(xui::Element* figure, uint32_t rgb) {
   const xui::PropertyBag* fill = figure->GetCompound("Fill");
   if (!fill) {
@@ -184,10 +157,6 @@ void TintGradient(xui::Element* figure, uint32_t rgb) {
   figure->Set("Fill", xui::Value{std::shared_ptr<const xui::PropertyBag>(tinted)});
 }
 
-// The controller battery icons (Controller_OneFourth.xur to Controller_Full.xur,
-// each a 38 x 14 scene of one PNG, ico_32x_Ctrl-Battery1 to 4) redrawn as
-// shapes traced from those PNGs, so they are sharp at 4K: the console's only
-// copies are 38 x 14 pixels. Units are the PNG's pixels.
 bool DrawControllerBattery(ImDrawList& list, std::string_view path,
                            const std::function<ImVec2(ImVec2)>& to_screen, float opacity) {
   int bars = 0;
@@ -210,7 +179,7 @@ bool DrawControllerBattery(ImDrawList& list, std::string_view path,
                              to_screen({x0, y1})};
     list.AddConvexPolyFilled(points, 4, color(alpha));
   };
-  // The pad: bumpers, body and grips, one outline so nothing overlaps.
+
   constexpr ImVec2 kPad[] = {
       {2.0f, 1.0f},  {2.6f, 0.2f},   {6.2f, 0.2f},   {6.7f, 1.0f},  {10.3f, 1.0f},
       {10.8f, 0.2f}, {13.6f, 0.2f},  {14.2f, 1.0f},  {14.6f, 3.0f}, {14.7f, 7.5f},
@@ -222,18 +191,17 @@ bool DrawControllerBattery(ImDrawList& list, std::string_view path,
   for (size_t i = 0; i < std::size(kPad); ++i) {
     pad[i] = to_screen(kPad[i]);
   }
-  // Without the anti-aliasing fringe: at the grips' sharp corners it throws
-  // thin spikes across the body.
+
   const ImDrawListFlags flags = list.Flags;
   list.Flags &= ~ImDrawListFlags_AntiAliasedFill;
   list.AddConcavePolyFilled(pad, int(std::size(pad)), color(0.6f));
   list.Flags = flags;
-  // The Guide button, darker on the body.
+
   const ImVec2 centre = to_screen({7.5f, 3.6f});
   const ImVec2 edge = to_screen({8.6f, 3.6f});
   list.AddCircleFilled(centre, std::hypot(edge.x - centre.x, edge.y - centre.y),
                        IM_COL32(0, 0, 0, int(0.45f * std::clamp(opacity, 0.0f, 1.0f) * 255)), 16);
-  // The battery: a faint body, its frame, the terminal and the bars.
+
   rect(16.9f, 1.9f, 34.1f, 10.0f, 0.12f);
   rect(16.0f, 1.0f, 35.0f, 1.9f, 0.6f);
   rect(16.0f, 10.0f, 35.0f, 10.9f, 0.6f);
@@ -246,8 +214,6 @@ bool DrawControllerBattery(ImDrawList& list, std::string_view path,
   return true;
 }
 
-// A legend button glyph (kButtonGlyphs) as a disc with its letter, bold, the
-// centre of its ink on the disc's centre. Units are the PNG's pixels.
 bool DrawButtonGlyph(ImDrawList& list, std::string_view path,
                      const std::function<ImVec2(ImVec2)>& to_screen, float opacity, ImFont* font) {
   const auto glyph = std::find_if(std::begin(kButtonGlyphs), std::end(kButtonGlyphs),
@@ -258,7 +224,7 @@ bool DrawButtonGlyph(ImDrawList& list, std::string_view path,
   const float alpha = std::clamp(opacity, 0.0f, 1.0f);
   const ImVec2 centre = to_screen({9.0f, 9.0f});
   const ImVec2 right = to_screen({10.0f, 9.0f});
-  const float scale = std::hypot(right.x - centre.x, right.y - centre.y);  // pixels per unit
+  const float scale = std::hypot(right.x - centre.x, right.y - centre.y);
   constexpr float kRadius = 8.0f;
   constexpr int kSegments = 96;
   ImVec2 disc[kSegments];
@@ -273,15 +239,14 @@ bool DrawButtonGlyph(ImDrawList& list, std::string_view path,
   if (!font || scale <= 0.0f) {
     return true;
   }
-  // At the screen size of the disc (pixels per PNG unit times 11).
+
   const float size = 11.0f * scale;
   ImFontBaked* baked = font->GetFontBaked(size);
   const ImFontGlyph* g = baked ? baked->FindGlyph(ImWchar(glyph->letter[0])) : nullptr;
   if (!g) {
     return true;
   }
-  // The centre of its ink on the disc's centre, placed at the exact position:
-  // AddText truncates to whole display units, three pixels each at 300%.
+
   const float k = size / baked->Size;
   const ImVec2 at(centre.x - (g->X0 + g->X1) / 2.0f * k, centre.y - (g->Y0 + g->Y1) / 2.0f * k);
   list.AddImage(font->OwnerAtlas->TexRef, ImVec2(at.x + g->X0 * k, at.y + g->Y0 * k),
@@ -290,9 +255,6 @@ bool DrawButtonGlyph(ImDrawList& list, std::string_view path,
   return true;
 }
 
-// The tab label column (Blade_Focus) starts a unit inside the centre blade's
-// top and left edges. At 720p that is under a pixel; at 4K it showed as a
-// white line above and beside the column.
 void CoverBladeEdge(xui::Element* column) {
   if (!column) {
     return;
@@ -303,8 +265,6 @@ void CoverBladeEdge(xui::Element* column) {
   column->Set("Height", xui::Value{column->height() + 1.0f});
 }
 
-// The letters the legend groups and visuals lay over the button glyphs, for
-// the console's font; DrawButtonGlyph draws them instead.
 void HideButtonLetters(xui::Element* root) {
   ForEach(root, [](xui::Element* e) {
     const std::string_view path = e->GetString("ImagePath");
@@ -323,9 +283,6 @@ void HideButtonLetters(xui::Element* root) {
   });
 }
 
-// The battery icon's frame for a charge: GuideMain names frames 0 to 3
-// Little, Low, Medium and High (Controller_OneFourth.xur to
-// Controller_Full.xur). XInput's four levels arrive as 5, 30, 60 and 100.
 int BatteryFrame(int percent) {
   if (percent < 15) {
     return 0;
@@ -336,10 +293,6 @@ int BatteryFrame(int percent) {
   return percent < 75 ? 2 : 3;
 }
 
-// The gamerscore glyph (sharedres GScore_white.png, 32 x 32) traced at a
-// larger size: a white disc of radius 14.5 with a G cut out of it. The G is a
-// ring gap (radius 7 to 9.3) open at the upper right, a crossbar and a stem
-// down to the ring. Units are the PNG's pixels, its centre at (16, 16).
 constexpr int kGamerscoreImageSize = 256;
 
 bool InGamerscoreGlyph(float x, float y) {
@@ -348,12 +301,12 @@ bool InGamerscoreGlyph(float x, float y) {
   if (r > 14.5f) {
     return false;
   }
-  // The crossbar and the stem.
+
   if ((y >= 15.3f && y <= 17.3f && x >= 16.0f && x <= 22.7f) ||
       (x >= 20.5f && x <= 22.7f && y >= 15.3f && y <= 24.5f)) {
     return false;
   }
-  // The ring gap, except the mouth from the crossbar up to 70 degrees.
+
   if (r >= 7.0f && r <= 9.3f) {
     const float angle = std::atan2(-dy, dx) * 180.0f / 3.14159265f;
     return angle > 0.0f && angle < 70.0f && dx > 0.0f;
@@ -380,12 +333,7 @@ std::vector<uint8_t> GamerscoreGlyphRGBA(int size) {
   return rgba;
 }
 
-// The status icons by the clock, which XAM sets in code: the controller's
-// battery (XboxGuide::UpdateControllerBattery) and the ring of light with
-// player 1's quadrant lit.
 void ShowControllerStatus(xui::Element* main) {
-  // The header's ring, a child of the scene; the Sign In button's visual
-  // has another.
   xui::Element* ring = nullptr;
   for (const auto& child : main->children()) {
     if (child->id() == "ROL") {
@@ -395,8 +343,7 @@ void ShowControllerStatus(xui::Element* main) {
   if (!ring) {
     return;
   }
-  // The visual's own light1 to light4 are the lit quadrants, over the dim
-  // ROL_Off ring.
+
   for (const auto& light : ring->children()) {
     const std::string_view id = light->id();
     if (id == "light1") {
@@ -409,7 +356,7 @@ void ShowControllerStatus(xui::Element* main) {
   }
 }
 
-}  // namespace
+}
 
 bool DrawGuideVectorImage(ImDrawList& list, std::string_view path,
                           const std::function<ImVec2(ImVec2)>& to_screen, float opacity,
@@ -460,7 +407,6 @@ std::vector<std::filesystem::path> SystemUpdateLocations() {
 
 std::string FindString(const std::vector<std::string>& strings, std::string_view prefix,
                        std::string_view fallback) {
-  // An exact match first: "Yes" is also the start of "Yes, apply it".
   for (const std::string& s : strings) {
     if (s == prefix) {
       return s;
@@ -476,7 +422,7 @@ std::string FindString(const std::vector<std::string>& strings, std::string_view
 
 namespace {
 std::span<const uint8_t> g_embedded_guide;
-}  // namespace
+}
 
 bool RegisterEmbeddedGuide(const uint8_t* data, size_t size) {
   g_embedded_guide = {data, size};
@@ -533,7 +479,7 @@ std::unique_ptr<GuideAssets> GuideAssets::FromUpdate(std::unique_ptr<xui::System
       !scene(assets->backdrop, "xam/xam", "hudbkgnd.xur")) {
     return nullptr;
   }
-  // A BC asset folder must not silently replace a 360 title's Guide.
+
   assets->emulator_layout = presentation == GuidePresentation::OriginalXbox;
   if (assets->emulator_layout) {
     if (!scene(assets->main, "hud/hud", "GuideMainEmulator.xur") ||
@@ -571,8 +517,7 @@ std::unique_ptr<GuideAssets> GuideAssets::FromUpdate(std::unique_ptr<xui::System
     error->clear();
   }
   assets->has_notify = scene(assets->notify, "xam/xam", "notify.xur");
-  // Preferences: the emulator's own list where there is one (Family Timer
-  // hidden).
+
   assets->has_options =
       ((assets->emulator_layout && scene(assets->options, "hud/hud", "OptionsEmulator.xur")) ||
        scene(assets->options, "hud/hud", "Options.xur")) &&
@@ -592,32 +537,27 @@ std::unique_ptr<GuideAssets> GuideAssets::FromUpdate(std::unique_ptr<xui::System
 
 GuideFonts AddGuideFonts(ImFontAtlas* atlas, int display_height) {
   GuideFonts fonts;
-  // Latin with Extended-A and -B, Greek, Cyrillic, punctuation, euro and
-  // trade mark, plus every character of the guide's string tables (filled in
-  // below once the bundle is read). Glyphs the font lacks are left out.
+
   static const ImWchar kBaseRanges[] = {0x0020, 0x024F, 0x0370, 0x03FF, 0x0400, 0x04FF, 0x2010,
                                         0x2027, 0x20AC, 0x20AC, 0x2122, 0x2122, 0};
-  // The atlas reads the ranges when it builds, so they outlive this call.
+
   static ImVector<ImWchar> ranges;
   ImFontGlyphRangesBuilder ranges_builder;
   ranges_builder.AddRanges(kBaseRanges);
   ranges.clear();
   ranges_builder.BuildRanges(&ranges);
   const ImWchar* kRanges = ranges.Data;
-  // One size; the static atlas scales it to each XUI point size. Baked for
-  // the guide's larger text (20 pt) at the display's scale over the
-  // console's 480-line scenes: 64 px at 1080p, 120 px at 2160p.
+
   const float guide_scale = float(std::max(display_height, 1080)) / 480.0f;
   const float baked_size =
       std::clamp(std::ceil(20.0f * 4.0f / 3.0f * guide_scale / 8.0f) * 8.0f, 48.0f, 128.0f);
   ImFontConfig config;
   config.OversampleH = baked_size > 64.0f ? 1 : 2;
   config.OversampleV = 1;
-  // The console's own font, from the guide built into the title.
+
   if (const auto bundle = EmbeddedGuide(); !bundle.empty()) {
     std::string error;
     if (auto modules = xui::SystemUpdate::ReadBundle(bundle, &error)) {
-      // The characters the guide's own strings use.
       if (auto packages = xui::SystemUpdate::FromModules(*modules, &error)) {
         for (const auto& [package, name] :
              {std::pair{"hud/hud", "Strings.xus"}, std::pair{"huduiskin/xam", "XamStrings.xus"},
@@ -638,7 +578,7 @@ GuideFonts AddGuideFonts(ImFontAtlas* atlas, int display_height) {
       const auto xtt = modules->find("font/xenonjklatin");
       if (xtt != modules->end() && update.AddFont("xenonjklatin", xtt->second, &error)) {
         const std::span<const uint8_t> ttf = update.Font("xenonjklatin");
-        // The atlas owns and frees the copy.
+
         void* data = IM_ALLOC(ttf.size());
         std::memcpy(data, ttf.data(), ttf.size());
         fonts.regular =
@@ -649,11 +589,10 @@ GuideFonts AddGuideFonts(ImFontAtlas* atlas, int display_height) {
     }
   }
   if (fonts.regular) {
-    // The console guide draws all its text in the one system font.
     fonts.bold = fonts.regular;
     return fonts;
   }
-  // Without the console's font: Segoe UI, the host's stand-in for it.
+
   const char* windows = std::getenv("WINDIR");
   if (!windows) {
     return fonts;
@@ -688,7 +627,7 @@ ImTextureID GuideMedia::Texture(std::string_view path, std::string_view package,
   if (it == images_.end()) {
     Image image;
     std::span<const uint8_t> bytes = xui::ResolveFile(*assets_->update, path, package);
-    // dlc://<media ID>/banner or /tile: art from the built-in add-on catalogue.
+
     if (path.starts_with("dlc://")) {
       const std::string_view rest = path.substr(6);
       const size_t slash = rest.find('/');
@@ -775,7 +714,6 @@ XboxGuide::XboxGuide(ImGuiDrawer* drawer, std::shared_ptr<const GuideAssets> ass
   context(skin_context_, "huduiskin/skin");
   context(profile_context_, "gamerprofile/gp");
 
-  // The HUD frame, with the guide as its hosted app.
   backdrop_ = xui::Element::Create(assets_->backdrop.root, backdrop_context_);
   hud_root_ = backdrop_->FindById("HUDRootScene");
   app_host_ = backdrop_->FindById("AppHostElementId");
@@ -790,7 +728,6 @@ XboxGuide::XboxGuide(ImGuiDrawer* drawer, std::shared_ptr<const GuideAssets> ass
   tab_scenes_[SettingsTab()]->AttachScene(SceneNode(assets_->settings_tab), hud_context_);
   ConfigureMain();
 
-  // The title sees system UI, as for the Guide button on the console.
   if (host_.input) {
     host_.input->AddUIInputBlocker();
   }
@@ -799,12 +736,10 @@ XboxGuide::XboxGuide(ImGuiDrawer* drawer, std::shared_ptr<const GuideAssets> ass
     host_.kernel_state->BroadcastNotification(kXnSysUi, 1);
   }
 
-  // GuideMain's "<tab>Close" brings a tab's blade in (the guide opening, or
-  // an app launched from it closing); "<tab>Open" takes it out.
   hud_root_->Play("ClosedToHalf");
   main_->Play("2Close");
   tabs_->Play("2Close");
-  SetFocus(FirstFocusable(tab_scenes_[2]), /*initial=*/true);
+  SetFocus(FirstFocusable(tab_scenes_[2]), true);
   last_tick_ = opened_ = std::chrono::steady_clock::now();
 }
 
@@ -819,8 +754,6 @@ XboxGuide::~XboxGuide() {
 }
 
 void XboxGuide::ConfigureMain() {
-  // Controls the guide acts on; the rest stay in the menu, disabled, as
-  // dashboard features a recompiled title cannot reach.
   for (std::string_view id : kRemovedEntries) {
     RemoveEntry(main_, id);
   }
@@ -836,9 +769,6 @@ void XboxGuide::ConfigureMain() {
     CoverBladeEdge(main_->FindById("Blade_Focus"));
   }
   if (assets_->emulator_layout) {
-    // Games has Achievements and Awards; Manage Game (downloadable content),
-    // Title Updates and Active Downloads follow, plain entries made from
-    // Awards.
     if (xui::Element* awards = main_->FindById("btnAvatarAwards")) {
       xui::Element* games = awards->parent();
       AddEntry(games, "btnAvatarAwards", "btnAvatarAwards", "btnManageGame", "Manage Game",
@@ -851,16 +781,13 @@ void XboxGuide::ConfigureMain() {
                "XuiButtonGuide");
     }
   } else if (xui::Element* recent = main_->FindById("btnQuickLaunch")) {
-    // Games & Apps gains Manage Game (downloadable content), below
-    // Achievements, made from the Recent entry.
     AddEntry(recent->parent(), "btnQuickLaunch", "btnAchievements", "btnManageGame", "Manage Game");
-    // Title Updates below it, a page of its own: updates are not add-ons.
+
     AddEntry(recent->parent(), "btnQuickLaunch", "btnManageGame", "btnTitleUpdates",
              "Title Updates");
     AddEntry(recent->parent(), "btnQuickLaunch", "btnTitleUpdates", "btnGameUpdate", "Game Update");
   }
-  // Settings gains Patches, Mods and Cheats below the console's settings
-  // entry, made from the Preferences entry.
+
   const std::string_view system_settings =
       assets_->emulator_layout ? "btnXboxOneXSettings" : "btnSystemSettings";
   if (xui::Element* preferences = main_->FindById("btnPersonalSettings")) {
@@ -907,8 +834,7 @@ void XboxGuide::ConfigureMain() {
   for (xui::Element* tab : tab_scenes_) {
     ScrollMenuTo(tab ? FirstFocusable(tab) : nullptr);
   }
-  // Achievements shows the gamerscore earned, beside the visual's own
-  // gamerscore glyph (drawn as xui::kGamerscoreImage).
+
   if (xui::Element* button = main_->FindById("btnAchievements"); button && host_.achievements) {
     uint32_t earned = 0;
     for (const auto& a : host_.achievements->ListAchievements()) {
@@ -965,9 +891,7 @@ void XboxGuide::UpdateControllerBattery() {
   if (!icon) {
     return;
   }
-  // Player 1's pad, whose quadrant the ring lights. As on the console, wired
-  // pads show no battery; so do wireless ones whose level the host cannot
-  // read (a USB dongle that presents its pad as wired, for one).
+
   input::PadBattery battery;
   const bool known = host_.input && host_.input->GetBattery(0, &battery) && battery.wireless &&
                      battery.percent >= 0;
@@ -1037,7 +961,7 @@ bool XboxGuide::IsTabMenuEntry(const xui::Element* control) const {
 }
 
 void XboxGuide::Dismiss() {
-  BeginClose(/*exit_title=*/false);
+  BeginClose(false);
 }
 
 void XboxGuide::BeginClose(bool exit_title) {
@@ -1064,7 +988,6 @@ void XboxGuide::OnDraw(ImGuiIO& io) {
   last_tick_ = now;
 
   if (!closing_) {
-    // Keyboard: arrows, Enter or Space for A, Escape or Backspace for B, Y.
     struct Key {
       ImGuiKey key;
       GuideAction action;
@@ -1085,7 +1008,7 @@ void XboxGuide::OnDraw(ImGuiIO& io) {
     };
     std::vector<GuideAction> actions;
     for (const Key& key : kKeys) {
-      if (ImGui::IsKeyPressed(key.key, /*repeat=*/true)) {
+      if (ImGui::IsKeyPressed(key.key, true)) {
         actions.push_back(key.action);
       }
     }
@@ -1201,7 +1124,6 @@ std::span<const int> XboxGuide::Tabs() const {
 }
 
 void XboxGuide::SwitchTab(int direction) {
-  // No wrap; the blade shuffle plays between neighbours.
   const std::span<const int> tabs = Tabs();
   const auto at = std::find(tabs.begin(), tabs.end(), tab_);
   const ptrdiff_t next = (at - tabs.begin()) + direction;
@@ -1218,7 +1140,7 @@ void XboxGuide::SwitchTab(int direction) {
   tab_ = tab;
   xui::Element* target = tab_focus_[tab] ? tab_focus_[tab] : FirstFocusable(tab_scenes_[tab]);
   if (target) {
-    xui::Element::MoveFocus(nullptr, target, /*initial=*/true);
+    xui::Element::MoveFocus(nullptr, target, true);
     focus_ = target;
   }
 }
@@ -1234,9 +1156,7 @@ void XboxGuide::Activate(xui::Element* control) {
   const std::string_view id = control->id();
   if (id == "btnDashboard") {
     OpenConfirm(Confirm::kXboxHome);
-    // Turn Off Console is removed (kRemovedEntries).
-    // } else if (id == "btnShutdown") {
-    //   OpenConfirm(Confirm::kTurnOff);
+
   } else if (id == "btnAchievements") {
     OpenAchievements();
   } else if (id == "btnPersonalSettings") {
@@ -1264,7 +1184,7 @@ void XboxGuide::Activate(xui::Element* control) {
 
 void XboxGuide::OpenAchievements() {
   achievement_list_ = host_.achievements->ListAchievements();
-  // Unlocked first, then the rest in catalog order, as the console lists them.
+
   std::stable_partition(
       achievement_list_.begin(), achievement_list_.end(),
       [&](const system::AchievementInfo& a) { return host_.achievements->IsUnlocked(a.id); });
@@ -1289,7 +1209,7 @@ void XboxGuide::OpenAchievements() {
            FormatCount(FindString(assets_->profile_strings, "%1!u! of %2!u! Achievements",
                                   "%1!u! of %2!u! Achievements"),
                        unlocked, uint32_t(achievement_list_.size())));
-  // The scene ships its loading state: spinner shown, header shading hidden.
+
   if (xui::Element* loading = achievements_->FindById("ctlLoading")) {
     loading->SetVisible(false);
   }
@@ -1328,7 +1248,7 @@ void XboxGuide::OpenAchievements() {
   first_row_ = 0;
   focus_ = nullptr;
   ScrollAchievements();
-  SetFocus(items[0], /*initial=*/true);
+  SetFocus(items[0], true);
   ShowAchievement(0);
   SetLegends(achievements_->GetString("LegendA"), achievements_->GetString("LegendB"), "");
 }
@@ -1376,7 +1296,6 @@ void XboxGuide::ShowAchievement(size_t index) {
   set_text("labPoints", fmt::format("{} {}", a.gamerscore, xui::kGamerscoreGlyph));
   std::string date;
   if (unlocked) {
-    // FILETIME: 100 ns since 1601.
     const uint64_t filetime = host_.achievements->GetUnlockTime(a.id);
     const std::time_t unix_time = std::time_t(filetime / 10000000ull - 11644473600ull);
     std::tm local = {};
@@ -1432,7 +1351,7 @@ void XboxGuide::CloseAchievements() {
   main_->Play(fmt::format("{}Close", tab_));
   tabs_->Play(fmt::format("{}Close", tab_));
   screen_ = Screen::kMain;
-  SetFocus(return_focus_, /*initial=*/true);
+  SetFocus(return_focus_, true);
   SetLegends(main_->GetString("LegendA"), main_->GetString("LegendB"), main_->GetString("LegendY"));
   media_->PlaySound("sharedres://btn_Back.xma", "");
 }
@@ -1492,8 +1411,6 @@ void XboxGuide::OpenConfirm(Confirm confirm) {
   HideButtonLetters(message_);
   screen_ = Screen::kConfirm;
 
-  // The title is what was chosen: "Leave Game" (Y or the Home tab) or
-  // "Turn Off Console".
   std::string title(main_->GetString("LegendY"));
   if (focus_ && focus_->enabled() && !focus_->text().empty() &&
       (confirm == Confirm::kTurnOff || focus_->id() == "btnDashboard")) {
@@ -1509,7 +1426,6 @@ void XboxGuide::OpenConfirm(Confirm confirm) {
     body = fmt::format("Delete {}? It can't be recovered.", saves_[confirm_save_].name);
   }
   if (confirm == Confirm::kTitleUpdate) {
-    // Turning a title update on or off runs the other executable.
     title = confirm_title_update_ ? fmt::format("Turn On Title Update {}", confirm_title_update_)
                                   : "Turn Off Title Update";
     body = confirm_title_update_
@@ -1547,8 +1463,8 @@ void XboxGuide::OpenConfirm(Confirm confirm) {
   }
   SetLegends("", "", "");
   focus_ = nullptr;
-  // Default to No, so a stray A does not end the session.
-  SetFocus(message_->FindById("Button1"), /*initial=*/true);
+
+  SetFocus(message_->FindById("Button1"), true);
 }
 
 void XboxGuide::CloseConfirm() {
@@ -1559,12 +1475,12 @@ void XboxGuide::CloseConfirm() {
             : pages_.empty() ? Screen::kMain
                              : Screen::kSettings;
   focus_ = nullptr;
-  SetFocus(return_focus_, /*initial=*/true);
+  SetFocus(return_focus_, true);
   if (screen_ == Screen::kMain) {
     SetLegends(main_->GetString("LegendA"), main_->GetString("LegendB"),
                main_->GetString("LegendY"));
   } else if (screen_ == Screen::kSettings && pages_.back().on_focus) {
-    pages_.back().on_focus();  // the page's details and legends again
+    pages_.back().on_focus();
   }
   media_->PlaySound("sharedres://btn_Back.xma", "");
 }
@@ -1590,7 +1506,7 @@ void XboxGuide::HandleConfirm(GuideAction action) {
             CloseConfirm();
             DeleteChosenSave();
           } else {
-            BeginClose(/*exit_title=*/true);
+            BeginClose(true);
           }
         } else {
           CloseConfirm();
@@ -1605,4 +1521,4 @@ void XboxGuide::HandleConfirm(GuideAction action) {
   }
 }
 
-}  // namespace rex::ui::guide
+}

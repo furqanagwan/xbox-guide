@@ -15,15 +15,13 @@
 
 #include <fmt/format.h>
 
-// The zlib decoder of stb_image; its implementation is in ui/image_decode.cpp.
 #include <stb_image.h>
 
 namespace rex::ui::xui {
 namespace {
 
-constexpr uint32_t kXttMagic = 0x78747466;  // "xttf"
-// The header: magic, a 256-byte signature, then the signed, file, compressed
-// and uncompressed sizes and the version. The compressed directory follows.
+constexpr uint32_t kXttMagic = 0x78747466;
+
 constexpr size_t kCompressedSizeAt = 0x10C;
 constexpr size_t kUncompressedSizeAt = 0x110;
 constexpr size_t kHeaderSize = 0x118;
@@ -58,8 +56,6 @@ void Set32(std::vector<uint8_t>& out, size_t at, uint32_t v) {
   Set16(out, at + 2, uint16_t(v));
 }
 
-/// zlib-inflates `in` (with its header); trailing bytes after the stream are
-/// ignored, as the glyph blocks are padded.
 std::optional<std::vector<uint8_t>> Inflate(std::span<const uint8_t> in, int size_hint) {
   int size = 0;
   char* data = stbi_zlib_decode_malloc_guesssize_headerflag(
@@ -85,8 +81,6 @@ uint32_t Checksum(std::span<const uint8_t> table) {
   return sum;
 }
 
-/// maxp 1.0 sized from the outlines: points and contours per simple glyph,
-/// components per composite one (one level deep, as these fonts are).
 std::vector<uint8_t> BuildMaxp(std::span<const uint8_t> glyf, const std::vector<uint32_t>& loca) {
   const size_t glyphs = loca.size() - 1;
   std::vector<uint16_t> points(glyphs), contours(glyphs);
@@ -140,20 +134,18 @@ std::vector<uint8_t> BuildMaxp(std::span<const uint8_t> glyf, const std::vector<
   Put16(maxp, max_contours);
   Put16(maxp, max_composite_points);
   Put16(maxp, max_composite_contours);
-  Put16(maxp, 2);  // maxZones
-  Put16(maxp, 0);  // maxTwilightPoints
-  Put16(maxp, 0);  // maxStorage
-  Put16(maxp, 0);  // maxFunctionDefs
-  Put16(maxp, 0);  // maxInstructionDefs
-  Put16(maxp, 0);  // maxStackElements
+  Put16(maxp, 2);
+  Put16(maxp, 0);
+  Put16(maxp, 0);
+  Put16(maxp, 0);
+  Put16(maxp, 0);
+  Put16(maxp, 0);
   Put16(maxp, max_instructions);
   Put16(maxp, max_components);
-  Put16(maxp, max_components ? 1 : 0);  // maxComponentDepth
+  Put16(maxp, max_components ? 1 : 0);
   return maxp;
 }
 
-/// OS/2 version 4 from the horizontal metrics; Windows and FreeType read
-/// their line metrics from it.
 std::vector<uint8_t> BuildOs2(std::span<const uint8_t> head, std::span<const uint8_t> hhea) {
   const int16_t ascent = int16_t(Be16(hhea, 4));
   const int16_t descent = int16_t(Be16(hhea, 6));
@@ -161,33 +153,31 @@ std::vector<uint8_t> BuildOs2(std::span<const uint8_t> head, std::span<const uin
   const int16_t y_min = int16_t(Be16(head, 38));
   const int16_t y_max = int16_t(Be16(head, 42));
   std::vector<uint8_t> os2;
-  Put16(os2, 4);                             // version
-  Put16(os2, uint16_t(Be16(head, 18) / 2));  // xAvgCharWidth: half an em
-  Put16(os2, 400);                           // usWeightClass
-  Put16(os2, 5);                             // usWidthClass
-  Put16(os2, 0);                             // fsType: installable
-  os2.resize(os2.size() + 2 * 11 + 10 + 16,
-             0);                                // sub/superscript, strikeout, class, PANOSE, ranges
-  os2.insert(os2.end(), {'X', 'B', 'O', 'X'});  // achVendID
-  Put16(os2, 0x0040);                           // fsSelection: regular
-  Put16(os2, 0x0020);                           // usFirstCharIndex
-  Put16(os2, 0xFFFF);                           // usLastCharIndex
-  Put16(os2, uint16_t(ascent));                 // sTypoAscender
-  Put16(os2, uint16_t(descent));                // sTypoDescender
-  Put16(os2, uint16_t(line_gap));               // sTypoLineGap
-  Put16(os2, uint16_t(std::max<int>(ascent, y_max)));     // usWinAscent
-  Put16(os2, uint16_t(std::max<int>(-descent, -y_min)));  // usWinDescent
-  Put32(os2, 1);                                          // ulCodePageRange1: Latin 1
-  Put32(os2, 0);                                          // ulCodePageRange2
-  Put16(os2, 0);                                          // sxHeight
-  Put16(os2, 0);                                          // sCapHeight
-  Put16(os2, 0);                                          // usDefaultChar
-  Put16(os2, 0x0020);                                     // usBreakChar
-  Put16(os2, 1);                                          // usMaxContext
+  Put16(os2, 4);
+  Put16(os2, uint16_t(Be16(head, 18) / 2));
+  Put16(os2, 400);
+  Put16(os2, 5);
+  Put16(os2, 0);
+  os2.resize(os2.size() + 2 * 11 + 10 + 16, 0);
+  os2.insert(os2.end(), {'X', 'B', 'O', 'X'});
+  Put16(os2, 0x0040);
+  Put16(os2, 0x0020);
+  Put16(os2, 0xFFFF);
+  Put16(os2, uint16_t(ascent));
+  Put16(os2, uint16_t(descent));
+  Put16(os2, uint16_t(line_gap));
+  Put16(os2, uint16_t(std::max<int>(ascent, y_max)));
+  Put16(os2, uint16_t(std::max<int>(-descent, -y_min)));
+  Put32(os2, 1);
+  Put32(os2, 0);
+  Put16(os2, 0);
+  Put16(os2, 0);
+  Put16(os2, 0);
+  Put16(os2, 0x0020);
+  Put16(os2, 1);
   return os2;
 }
 
-/// post version 3: metrics only, no glyph names.
 std::vector<uint8_t> BuildPost() {
   std::vector<uint8_t> post;
   Put32(post, 0x00030000);
@@ -195,7 +185,7 @@ std::vector<uint8_t> BuildPost() {
   return post;
 }
 
-}  // namespace
+}
 
 std::optional<std::vector<uint8_t>> XttToTrueType(std::span<const uint8_t> xtt,
                                                   std::string* error) {
@@ -219,7 +209,6 @@ std::optional<std::vector<uint8_t>> XttToTrueType(std::span<const uint8_t> xtt,
   }
   const std::span<const uint8_t> dir(*sfnt);
 
-  // Table offsets are into the directory, except xglf's, which is into the file.
   std::map<std::string, std::span<const uint8_t>> tables;
   const uint16_t table_count = Be16(dir, 4);
   if (dir.size() < 12 + size_t(table_count) * 16) {
@@ -245,7 +234,6 @@ std::optional<std::vector<uint8_t>> XttToTrueType(std::span<const uint8_t> xtt,
     return fail("the XTT font's head, hhea or xloc table is too short");
   }
 
-  // Each glyph sits inside one compressed block; blocks are inflated once.
   const std::span<const uint8_t> xglf = tables["xglf"];
   const std::span<const uint8_t> xloc = tables["xloc"];
   const size_t glyph_count = xloc.size() / 4 - 1;
@@ -287,8 +275,8 @@ std::optional<std::vector<uint8_t>> XttToTrueType(std::span<const uint8_t> xtt,
   loca.push_back(uint32_t(glyf.size()));
 
   std::vector<uint8_t> head(tables["head"].begin(), tables["head"].end());
-  Set32(head, 8, 0);   // checkSumAdjustment, set below
-  Set16(head, 50, 1);  // indexToLocFormat: 32-bit loca
+  Set32(head, 8, 0);
+  Set16(head, 50, 1);
   std::vector<uint8_t> hhea(tables["hhea"].begin(), tables["hhea"].end());
   if (Be16(hhea, 34) > glyph_count) {
     Set16(hhea, 34, uint16_t(glyph_count));
@@ -298,7 +286,7 @@ std::optional<std::vector<uint8_t>> XttToTrueType(std::span<const uint8_t> xtt,
   for (uint32_t offset : loca) {
     Put32(loca_table, offset);
   }
-  // The font's own standard tables are kept; those it leaves out are built.
+
   std::map<std::string, std::vector<uint8_t>> out_tables;
   for (const auto& [tag, table] : tables) {
     if (!tag.starts_with('x') && tag != "glyf" && tag != "loca") {
@@ -319,7 +307,6 @@ std::optional<std::vector<uint8_t>> XttToTrueType(std::span<const uint8_t> xtt,
   out_tables["glyf"] = std::move(glyf);
   out_tables["loca"] = std::move(loca_table);
 
-  // The sfnt: tables in tag order, each 4-byte aligned.
   const uint16_t count = uint16_t(out_tables.size());
   uint16_t power = 1, log2 = 0;
   while (power * 2 <= count) {
@@ -352,4 +339,4 @@ std::optional<std::vector<uint8_t>> XttToTrueType(std::span<const uint8_t> xtt,
   return font;
 }
 
-}  // namespace rex::ui::xui
+}

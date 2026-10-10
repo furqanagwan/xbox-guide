@@ -23,14 +23,10 @@
 
 namespace rex::input {
 class InputSystem;
-}  // namespace rex::input
+}
 
 namespace rex::ui::guide {
 
-/// The keyboard a title opens with XamShowKeyboardUI, from the console's own
-/// scenes (vk KeyboardMain hosting KeyboardBase, in the HUD backdrop as XAM
-/// shows it). Owns itself as XAM dialogs do: `done` gets the text, or nothing
-/// when cancelled, before it deletes itself after its close animation.
 class XboxKeyboard final : public ImGuiDialog {
  public:
   struct Request {
@@ -48,8 +44,6 @@ class XboxKeyboard final : public ImGuiDialog {
   void OnClose() override;
 
  private:
-  // A spot on the keyboard: rows 0-4 are the keys, 5 Backspace and Space;
-  // column -1 is the left column, 10 the right.
   struct Spot {
     int row = 0, column = 0;
   };
@@ -73,13 +67,12 @@ class XboxKeyboard final : public ImGuiDialog {
   xui::SceneContext backdrop_context_, vk_context_;
   std::unique_ptr<xui::Element> backdrop_;
   xui::Element* hud_root_ = nullptr;
-  xui::Element* keys_ = nullptr;  // KeysGroup
+  xui::Element* keys_ = nullptr;
   xui::Element* edit_ = nullptr;
   xui::Element* focus_ = nullptr;
   Spot spot_;
   bool closing_ = false;
-  // PC keys wait until every key held as the keyboard opened (the Enter that
-  // asked for it) is released, as pad buttons do.
+
   bool keys_armed_ = false;
   bool first_frame_ = true;
   bool accepted_ = false;
@@ -87,4 +80,4 @@ class XboxKeyboard final : public ImGuiDialog {
   std::chrono::steady_clock::time_point opened_, last_tick_, caret_shown_at_;
 };
 
-}  // namespace rex::ui::guide
+}

@@ -26,8 +26,8 @@ namespace rex::ui::guide {
 namespace {
 
 constexpr float kRowHeight = 28.0f;
-constexpr size_t kMaxRows = 11;  // the list area of the Options scene
-// The right pane's text column (the scene's graphic_metapane, y 61 to 405).
+constexpr size_t kMaxRows = 11;
+
 constexpr float kPaneTop = 61.0f;
 constexpr float kPaneBottom = 405.0f;
 
@@ -47,7 +47,6 @@ std::string Joined(const std::vector<std::string>& lines) {
   return out;
 }
 
-// The Windows file picker for one title update package.
 std::filesystem::path PickPackage(const std::string& title) {
   std::filesystem::path picked;
   const HRESULT init = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
@@ -77,7 +76,7 @@ std::filesystem::path PickPackage(const std::string& title) {
   return picked;
 }
 
-}  // namespace
+}
 
 const PPCTitleUpdate* XboxGuide::TitleUpdateAt(xui::Element* row) const {
   const auto at = std::find(update_rows_.begin(), update_rows_.end(), row);
@@ -89,7 +88,7 @@ void XboxGuide::OpenTitleUpdates() {
   SettingsPage& page = PushPage(assets_->options_notifications, "Title Updates");
   updates_scene_ = page.scene;
   update_rows_.clear();
-  // No banner: the details fill the right pane from its top.
+
   if (xui::Element* e = updates_scene_->FindById("XuiLabel1")) {
     xui::Vec3 p = e->GetVector("Position");
     p.y = kPaneTop;
@@ -155,12 +154,11 @@ void XboxGuide::FillTitleUpdates() {
     SetLegends("", scene->GetString("LegendB"), "");
     return;
   }
-  SetFocus(update_rows_.front(), /*initial=*/true);
+  SetFocus(update_rows_.front(), true);
   ShowTitleUpdate(host_.title_updates[0]);
 }
 
 void XboxGuide::PollTitleUpdates() {
-  // A package the player picked: install it.
   if (title_update_pick_ && title_update_pick_->load()) {
     title_update_pick_.reset();
     const auto picked = std::move(picked_title_update_);
@@ -175,7 +173,7 @@ void XboxGuide::PollTitleUpdates() {
   if (!updates_scene_ || pages_.empty() || pages_.back().scene != updates_scene_) {
     return;
   }
-  // The rows follow their downloads; the focused one shows the bytes so far.
+
   for (size_t i = 0; i < update_rows_.size(); ++i) {
     const PPCTitleUpdate& update = host_.title_updates[i];
     const std::string action = TitleUpdateAction(update);
@@ -194,12 +192,11 @@ void XboxGuide::PollTitleUpdates() {
 
 namespace {
 
-// What this build can do with `update`.
 struct TitleUpdateState {
-  bool built = false;      // its executable is here (or this is it)
-  bool installed = false;  // its package is in the local data folder
-  bool on = false;         // the player turned it on (title_update)
-  bool running = false;    // this executable is that update's
+  bool built = false;
+  bool installed = false;
+  bool on = false;
+  bool running = false;
   std::shared_ptr<TitleUpdateJob> job;
 };
 
@@ -217,7 +214,7 @@ TitleUpdateState StateOf(const PPCTitleUpdate& update, const GuideHost& host) {
   return s;
 }
 
-}  // namespace
+}
 
 std::string XboxGuide::TitleUpdateAction(const PPCTitleUpdate& update) const {
   const TitleUpdateState s = StateOf(update, host_);
@@ -301,7 +298,7 @@ void XboxGuide::SelectTitleUpdate(const PPCTitleUpdate& update) {
     ShowTitleUpdate(update);
     return;
   }
-  // On or off takes a restart: the other executable runs it.
+
   confirm_title_update_ = s.on ? 0 : update.version;
   OpenConfirm(Confirm::kTitleUpdate);
 }
@@ -317,7 +314,7 @@ void XboxGuide::ChooseTitleUpdateFile(const PPCTitleUpdate& update) {
   title_update_pick_version_ = update.version;
   auto picked = std::make_shared<std::filesystem::path>();
   const std::string title = fmt::format("Install title update {}", update.version);
-  // Polled from PollTitleUpdates; the picker runs off the UI thread.
+
   std::thread([done, picked, title] {
     *picked = PickPackage(title);
     done->store(true);
@@ -335,7 +332,7 @@ void XboxGuide::ApplyTitleUpdateChoice() {
   if (host_.restart_title) {
     host_.restart_title();
   }
-  BeginClose(/*exit_title=*/true);
+  BeginClose(true);
 }
 
 void XboxGuide::OpenActiveDownloads() {
@@ -366,7 +363,7 @@ void XboxGuide::FillActiveDownloads() {
     item.title = fmt::format("Title Update {}", job->update.version);
     item.details = fmt::format("{}\r\n{}", item.title,
                                job->from_file ? "From a file on this PC" : "From the internet");
-    // Acquire the terminal state before reading non-atomic error strings.
+
     const auto state = job->state.load();
     const uint64_t done = job->done.load(), total = job->total.load();
     switch (state) {
@@ -430,7 +427,7 @@ void XboxGuide::FillActiveDownloads() {
                                                        : std::string()});
     }
     if (!download_rows_.empty()) {
-      SetFocus(download_rows_[std::min(focused, download_rows_.size() - 1)], /*initial=*/true);
+      SetFocus(download_rows_[std::min(focused, download_rows_.size() - 1)], true);
     }
   }
   std::string details = "Nothing is downloading. Choose game-source extraction or a title update.";
@@ -454,4 +451,4 @@ void XboxGuide::PollActiveDownloads() {
     FillActiveDownloads();
 }
 
-}  // namespace rex::ui::guide
+}

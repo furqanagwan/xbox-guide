@@ -10,11 +10,11 @@
 
 namespace rex::ui::guide {
 namespace {
-constexpr float kRowHeight = 28.0f;  // btn_Count, as Manage Storage spaces its rows
+constexpr float kRowHeight = 28.0f;
 constexpr float kPaneTop = 61.0f;
 constexpr float kPaneBottom = 405.0f;
 constexpr float kPaneMargin = 8.0f;
-}  // namespace
+}
 
 std::unique_ptr<GuideListPage> GuideListPage::Create(const xui::Document& frame,
                                                      const xui::SceneContext& frame_context,
@@ -37,9 +37,7 @@ std::unique_ptr<GuideListPage> GuideListPage::Create(const xui::Document& frame,
   page->details_ = page->scene_ ? page->scene_->FindById("XuiLabel1") : nullptr;
   if (!model || !page->details_)
     return nullptr;
-  // The details run down the right pane (graphic_metapane, from y 61) to its
-  // foot, as Manage Game places them; the scene's own label is a few lines
-  // tall, so longer details would scroll and clip.
+
   xui::Vec3 details = page->details_->GetVector("Position");
   details.y = kPaneTop + kPaneMargin;
   page->details_->Set("Position", xui::Value{details});
@@ -47,7 +45,6 @@ std::unique_ptr<GuideListPage> GuideListPage::Create(const xui::Document& frame,
   xui::Vec3 position = model->GetVector("Position");
   const float top = position.y;
   for (size_t i = 0; i < kVisibleRows; ++i) {
-    // btn_Count: the name on the left, the secondary text on the right.
     xui::Element* row =
         model->parent()->CloneChild(*model, fmt::format("btnListRow{}", i), "btn_Count");
     position.y = top + float(i) * kRowHeight;
@@ -92,7 +89,7 @@ void GuideListPage::Show(std::string heading, std::vector<GuideListRow> rows, si
   SetLegend("AButton", "AText", rows_.empty() ? std::string{} : legend_a);
   SetLegend("BButton", "BText", legend_b);
   focused_ = rows_.empty() ? 0 : std::min(focus, rows_.size() - 1);
-  // The focused row sits as high in the window as the list allows.
+
   first_ = rows_.size() > kVisibleRows ? std::min(focused_, rows_.size() - kVisibleRows) : 0;
   Refresh();
 }
@@ -137,7 +134,7 @@ void GuideListPage::Focus(size_t index) {
   else if (focused_ >= first_ + kVisibleRows)
     first_ = focused_ + 1 - kVisibleRows;
   Refresh();
-  // Scrolling keeps focus on the same control, so give its sound here.
+
   if (scrolled && hud_context_.play_sound)
     hud_context_.play_sound("sharedres://btn_Focus.xma", "");
 }
@@ -152,4 +149,4 @@ std::optional<size_t> GuideListPage::Activate() {
 void GuideListPage::PlayClose() {
   hud_root_->Play("FullToClosed");
 }
-}  // namespace rex::ui::guide
+}

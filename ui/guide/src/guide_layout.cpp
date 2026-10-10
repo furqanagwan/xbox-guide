@@ -20,9 +20,8 @@ struct Range {
   int32_t first, last;
 };
 
-// The Tabscene's frames for each layout (17559 GuideMain named frames).
-constexpr Range kRightRanges[] = {{1, 24}, {73, 180}};   // 1To2, 2To1; 1Open to 2CloseEnd
-constexpr Range kLeftRanges[] = {{49, 72}, {232, 283}};  // 3To4, 4To3; 4Open to 4CloseEnd
+constexpr Range kRightRanges[] = {{1, 24}, {73, 180}};
+constexpr Range kLeftRanges[] = {{49, 72}, {232, 283}};
 constexpr Range kLeftSwitches[] = {{49, 72}};
 
 bool InRanges(std::initializer_list<Range> ranges, int32_t frame) {
@@ -49,7 +48,6 @@ bool SameProps(const xui::Timeline& a, const xui::Timeline& b) {
                     });
 }
 
-// `target`'s keyframes in `ranges` replaced by `source`'s there.
 void Follow(xui::Timeline& target, const xui::Timeline& source,
             std::initializer_list<Range> ranges) {
   std::erase_if(target.keyframes,
@@ -63,7 +61,6 @@ void Follow(xui::Timeline& target, const xui::Timeline& source,
             [](const xui::Keyframe& a, const xui::Keyframe& b) { return a.frame < b.frame; });
 }
 
-// `track`'s Show false at every keyframe in `ranges`.
 void Hide(xui::Timeline& track, std::initializer_list<Range> ranges) {
   for (size_t i = 0; i < track.props.size(); ++i) {
     const auto& path = track.props[i].path;
@@ -78,15 +75,14 @@ void Hide(xui::Timeline& track, std::initializer_list<Range> ranges) {
   }
 }
 
-}  // namespace
+}
 
 bool UseThreeTabs(xui::Node& guide_main) {
   xui::Node* tabs = FindNode(guide_main, "Tabscene");
   if (!tabs) {
     return false;
   }
-  // Copies of the scene's own tracks, so a label that moves to its
-  // neighbour's track is read before that neighbour is changed.
+
   std::map<std::string, xui::Timeline, std::less<>> original;
   for (const xui::Timeline& t : tabs->timelines) {
     original.emplace(t.target_id, t);
@@ -129,7 +125,6 @@ bool UseThreeTabs(xui::Node& guide_main) {
   Hide(*right_blade, {kRightRanges[0], kRightRanges[1]});
   Hide(*left_blade, {kLeftRanges[0], kLeftRanges[1]});
 
-  // Home to Settings is 3To4's frames; 2To3 and 3To2 have no use.
   std::erase_if(tabs->named_frames, [](const xui::NamedFrame& f) {
     return f.name.starts_with("2To3") || f.name.starts_with("3To2");
   });
@@ -143,4 +138,4 @@ bool UseThreeTabs(xui::Node& guide_main) {
   return true;
 }
 
-}  // namespace rex::ui::guide
+}

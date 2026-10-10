@@ -70,11 +70,10 @@ struct Handle {
   }
 };
 
-// An open GET request whose response headers have arrived.
 struct Request {
   Handle session, connection, request;
   DWORD status = 0;
-  uint64_t length = 0;  // Content-Length, 0 when absent
+  uint64_t length = 0;
 };
 
 std::string Open(const std::string& url, Request& r) {
@@ -142,7 +141,7 @@ std::string Fill(std::string_view pattern, const PPCTitleUpdate& update, uint32_
   return out;
 }
 
-}  // namespace
+}
 
 std::string HexString(std::span<const uint8_t> bytes) {
   std::string out;
@@ -173,7 +172,7 @@ std::optional<TitleUpdatePackage> ReadTitleUpdatePackage(std::span<const uint8_t
   p.base_version = Be32(&head[0x35C]);
   p.title_id = Be32(&head[0x360]);
   std::copy_n(&head[0x32C], 20, p.content_id.begin());
-  // Display name: UTF-16BE at 0x411, 0x80 bytes per language; English first.
+
   std::u16string name;
   for (size_t at = 0x411; at + 1 < 0x411 + 0x80 && at + 1 < head.size(); at += 2) {
     const char16_t c = char16_t((head[at] << 8) | head[at + 1]);
@@ -261,7 +260,7 @@ std::string InstallTitleUpdate(const fs::path& package_file, const PPCTitleUpdat
   const fs::path folder = TitleUpdateFolder(local_dir, expected.version);
   std::error_code ec;
   fs::create_directories(folder, ec);
-  // A download arrives as <name>.part; a picked file keeps its own name.
+
   fs::path name = package_file.filename();
   if (name.extension() == ".part") {
     name.replace_extension();
@@ -272,7 +271,7 @@ std::string InstallTitleUpdate(const fs::path& package_file, const PPCTitleUpdat
       !fs::copy_file(package_file, staging, fs::copy_options::overwrite_existing, ec)) {
     return fmt::format("it couldn't be copied ({})", ec.message());
   }
-  // Only the new copy stays: one package per version.
+
   for (const auto& entry : fs::directory_iterator(folder, ec)) {
     if (entry.path() != staging) {
       fs::remove(entry.path(), ec);
@@ -451,11 +450,10 @@ namespace {
 
 std::mutex jobs_mutex;
 std::vector<std::shared_ptr<TitleUpdateJob>>& Jobs() {
-  static auto* jobs = new std::vector<std::shared_ptr<TitleUpdateJob>>();  // outlives exit
+  static auto* jobs = new std::vector<std::shared_ptr<TitleUpdateJob>>();
   return *jobs;
 }
 
-// Runs `work` for a new job of `update`, unless one is running for it.
 std::shared_ptr<TitleUpdateJob> StartJob(const PPCTitleUpdate& update, bool from_file,
                                          std::function<void(TitleUpdateJob&)> work) {
   std::lock_guard lock(jobs_mutex);
@@ -473,7 +471,7 @@ std::shared_ptr<TitleUpdateJob> StartJob(const PPCTitleUpdate& update, bool from
   return job;
 }
 
-}  // namespace
+}
 
 std::shared_ptr<TitleUpdateJob> StartTitleUpdateDownload(const PPCTitleUpdate& update,
                                                          uint32_t title_id,
@@ -543,7 +541,7 @@ LaunchChoice ChooseLaunch(uint32_t built, uint32_t wanted, const fs::path& exe_p
                           const fs::path& local_dir, bool handed_off) {
   std::error_code ec;
   LaunchChoice choice;
-  // The update the player turned on runs only if it's installed and built.
+
   uint32_t target = wanted;
   if (target) {
     if (FindInstalledTitleUpdate(local_dir, target).empty()) {
@@ -560,7 +558,6 @@ LaunchChoice ChooseLaunch(uint32_t built, uint32_t wanted, const fs::path& exe_p
     if (built) {
       choice.update = FindInstalledTitleUpdate(local_dir, built);
       if (choice.update.empty()) {
-        // Handed an update build without its update: go back to the original.
         const fs::path original = TitleUpdateExecutable(exe_path, built, 0);
         if (!handed_off && fs::is_regular_file(original, ec)) {
           choice.hand_off = true;
@@ -574,7 +571,6 @@ LaunchChoice ChooseLaunch(uint32_t built, uint32_t wanted, const fs::path& exe_p
   }
   const fs::path executable = TitleUpdateExecutable(exe_path, built, target);
   if (!fs::is_regular_file(executable, ec)) {
-    // Only an update build can lack the original beside it; run as built.
     choice.update = FindInstalledTitleUpdate(local_dir, built);
     choice.cannot_run = choice.update.empty();
     return choice;
@@ -588,4 +584,4 @@ LaunchChoice ChooseLaunch(uint32_t built, uint32_t wanted, const fs::path& exe_p
   return choice;
 }
 
-}  // namespace rex::ui::guide
+}

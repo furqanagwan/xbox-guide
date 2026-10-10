@@ -22,7 +22,7 @@ IndentAccessModifiers: false
 # Namespaces
 NamespaceIndentation: None
 CompactNamespaces: false
-FixNamespaceComments: true
+FixNamespaceComments: false
 
 # Includes
 SortIncludes: Never

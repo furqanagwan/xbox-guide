@@ -92,7 +92,6 @@ NamedFrame Frame(std::string name, int32_t frame, FrameCommand command = FrameCo
   return f;
 }
 
-// A skin with a button visual (100x20) and a label visual named after its class.
 Document MakeSkin() {
   auto fill = std::make_shared<PropertyBag>();
   fill->entries.push_back({Def("XuiFigureFill", "FillColor"), Value{Color{0xFF008A00}}});
@@ -177,7 +176,7 @@ struct Fixture {
   Element* Find(std::string_view id) { return root->FindById(id); }
 };
 
-}  // namespace
+}
 
 TEST_CASE("Controls take their skin visual and anchor it to their own size", "[xui]") {
   Fixture f;
@@ -185,12 +184,12 @@ TEST_CASE("Controls take their skin visual and anchor it to their own size", "[x
   REQUIRE(a);
   Element* hl = a->FindById("hl");
   REQUIRE(hl);
-  // The visual is 100 wide; the button is 150.
+
   CHECK(hl->width() == Approx(150.0f));
   CHECK(a->FindById("text_Label")->width() == Approx(130.0f));
   CHECK(a->FindById("icon")->position().x == Approx(140.0f));
   CHECK(a->FindById("icon")->width() == Approx(10.0f));
-  // No Visual property: the visual named after the class.
+
   REQUIRE(f.Find("lbl")->FindById("Text"));
 }
 
@@ -204,11 +203,11 @@ TEST_CASE("Timelines show frame 0 when built and play named frames with easing",
   REQUIRE(a->Play("Focus"));
   CHECK(f.sounds == std::vector<std::string>{"focus.xma"});
   a->Advance(5.0);
-  // Halfway through an ease-in -100 / ease-out 100 segment.
+
   CHECK(hl->GetFloat("Opacity") == Approx(0.75f));
   CHECK(a->playing());
   a->Advance(20.0);
-  // EndFocus stops the playhead on its frame.
+
   CHECK_FALSE(a->playing());
   CHECK(a->frame() == Approx(15.0));
   CHECK(hl->GetFloat("Opacity") == Approx(1.0f));
@@ -236,7 +235,7 @@ TEST_CASE("Compound properties animate per element, not in the shared scene data
   };
   CHECK(fill_color(a) == 0xFF1CB61C);
   CHECK(fill_color(c) == 0xFF008A00);
-  // The skin document is untouched.
+
   const auto* doc_fill =
       f.skin.root.children[0].children[0].Find("Fill")->get<std::shared_ptr<const PropertyBag>>();
   CHECK((*doc_fill)->Find("FillColor")->get<Color>()->argb == 0xFF008A00);
@@ -269,7 +268,6 @@ TEST_CASE("Seek poses an element at a frame without playing", "[xui]") {
 }
 
 TEST_CASE("Menu entries are removed and added with the list closed up", "[xui][guide]") {
-  // a, b, c stacked 20 apart, linked up and down.
   Document skin = MakeSkin();
   Document doc;
   doc.root = MakeNode(
@@ -303,9 +301,8 @@ TEST_CASE("Menu entries are removed and added with the list closed up", "[xui][g
   CHECK(a->Navigate(NavDirection::kDown) == d);
   CHECK(d->Navigate(NavDirection::kDown) == c);
   CHECK(c->Navigate(NavDirection::kUp) == d);
-  CHECK(d->FindById("hl"));  // the model's visual
+  CHECK(d->FindById("hl"));
 
-  // A plain entry made from a row of another look.
   Element* e = rex::ui::guide::AddEntry(scene, "a", "d", "e", "Ee", "XuiLabel");
   REQUIRE(e);
   CHECK(e->GetString("Visual") == "XuiLabel");
@@ -316,7 +313,6 @@ TEST_CASE("Menu entries are removed and added with the list closed up", "[xui][g
 }
 
 TEST_CASE("A menu taller than its scene scrolls the focused entry into view", "[xui][guide]") {
-  // Five entries 20 tall in a scene 50 tall: two and a half show.
   Document skin = MakeSkin();
   std::vector<Node> entries;
   for (int i = 0; i < 5; ++i) {
@@ -408,7 +404,6 @@ TEST_CASE("Scene paths resolve by protocol, then the scene's package, then share
   CHECK(ResolveFile(update, "sharedres://a.png", "hud/hud").empty());
 }
 
-// Local only (REXGLUE_SYSTEM_UPDATE): the console's guide plays its blade shuffle.
 TEST_CASE("The console's guide scene plays its tab transitions", "[xui][local]") {
   const char* path = std::getenv("REXGLUE_SYSTEM_UPDATE");
   if (!path || !*path) {
@@ -445,8 +440,6 @@ TEST_CASE("The console's guide scene plays its tab transitions", "[xui][local]")
 
 namespace {
 
-// A GuideMain whose Tabscene tracks hold each label's (or blade's) number
-// plus the frame, at the frames the three-tab rewrite reads.
 Node MakeGuideMain(bool with_left_blade) {
   const PropDef* position = Def("XuiElement", "Position");
   const PropDef* show = Def("XuiElement", "Show");
@@ -491,7 +484,6 @@ const Timeline& TrackOf(const Node& main, std::string_view id) {
   return tabs->timelines.front();
 }
 
-// Label number (the track's index in MakeGuideMain) and Show at `frame`.
 std::pair<int, bool> At(const Node& main, std::string_view id, int32_t frame) {
   for (const Keyframe& k : TrackOf(main, id).keyframes) {
     if (k.frame == frame) {
@@ -502,31 +494,29 @@ std::pair<int, bool> At(const Node& main, std::string_view id, int32_t frame) {
   return {};
 }
 
-}  // namespace
+}
 
 TEST_CASE("GuideMain's blades are rewritten for three tabs", "[xui][guide]") {
   Node main = MakeGuideMain(true);
   REQUIRE(rex::ui::guide::UseThreeTabs(main));
   constexpr int kMedia = 3, kHome = 4, kMediaSel = 9;
 
-  // Tabs 1 and 2: Settings is where Media was; the third right blade is gone.
   for (int32_t frame : {1, 12, 13, 24, 73, 180}) {
     CHECK(At(main, "txt_Settings", frame).first == kMedia);
     CHECK_FALSE(At(main, "Blade5", frame).second);
     CHECK(At(main, "Blade6", frame).second);
   }
-  // Tab 4: Games where Home was, Home where Media was; the third left blade
-  // is gone; Home's content and selected label leave as Media's did.
+
   for (int32_t frame : {49, 60, 61, 72, 232, 283}) {
     CHECK(At(main, "txt_Games", frame).first == kHome);
     CHECK(At(main, "txt_home", frame).first == kMedia);
     CHECK_FALSE(At(main, "Blade6", frame).second);
     CHECK(At(main, "Blade5", frame).second);
   }
-  CHECK(At(main, "Tab2", 49).first == kMedia + 4);  // Tab3
+  CHECK(At(main, "Tab2", 49).first == kMedia + 4);
   CHECK(At(main, "txt_homeSel", 60).first == kMediaSel);
-  CHECK(At(main, "Tab2", 232).first == 6);  // its own outside the switches
-  // Untouched outside the rewritten frames.
+  CHECK(At(main, "Tab2", 232).first == 6);
+
   CHECK(At(main, "txt_Settings", 25).first == 2);
   CHECK(At(main, "txt_home", 1).first == kHome);
 
@@ -545,8 +535,6 @@ TEST_CASE("A GuideMain of another layout is left as it is", "[xui][guide]") {
   CHECK(main.FindById("Tabscene")->named_frames.size() == 10);
 }
 
-// Local only (REXGLUE_SYSTEM_UPDATE): the console's guide, rewritten for three
-// tabs, rests with its blades and labels where a three-tab guide has them.
 TEST_CASE("The console's guide scene switches between three tabs", "[xui][local]") {
   const char* path = std::getenv("REXGLUE_SYSTEM_UPDATE");
   if (!path || !*path) {
@@ -574,7 +562,7 @@ TEST_CASE("The console's guide scene switches between three tabs", "[xui][local]
   auto x = [&](std::string_view id) { return root->FindById(id)->position().x; };
   auto shown = [&](std::string_view id) { return root->FindById(id)->visible(); };
 
-  play("2Close");  // the guide opening on Home
+  play("2Close");
   CHECK_FALSE(shown("Blade5"));
   CHECK(x("txt_Settings") == Approx(638.0f));
   CHECK(x("txt_Games") == Approx(242.0f));
@@ -601,9 +589,6 @@ TEST_CASE("The console's guide scene switches between three tabs", "[xui][local]
   CHECK_FALSE(tabs->Play("2To3"));
 }
 
-// Local only (REXGLUE_GUIDE_FLASH, an Xbox PC backward-compatibility game's
-// Content/Flash): the guide Microsoft's backward compatibility shows, with its
-// own three tabs.
 TEST_CASE("The backward-compatibility guide has its own three tabs", "[xui][guide][local]") {
   const char* path = std::getenv("REXGLUE_GUIDE_FLASH");
   if (!path || !*path) {
@@ -670,8 +655,7 @@ TEST_CASE("Title presentation never changes with available Guide scenes",
   auto bc = GuideAssets::Load(flash, &error, GuidePresentation::OriginalXbox);
   REQUIRE(bc);
   CHECK(bc->emulator_layout);
-  // A BC-only HUD may lack the ordinary scenes. Never substitute its emulator
-  // scenes when a 360 host loads it through the default API.
+
   auto default_bc = GuideAssets::Load(flash, &error);
   if (default_bc) {
     CHECK_FALSE(default_bc->emulator_layout);
@@ -682,10 +666,9 @@ TEST_CASE("Title presentation never changes with available Guide scenes",
 
 TEST_CASE("Text taller than its box scrolls, holds and fades back to the top", "[xui]") {
   using rex::ui::xui::TextScrollAt;
-  // 30 units over, 10 a second: 2.5 s at the top, 3 s scrolling, 2 s at the
-  // end, 0.6 s fading out; then it fades back in at the top.
+
   CHECK(TextScrollAt(1.0, 30, 10).offset == 0);
-  CHECK(TextScrollAt(1.0, 30, 10).alpha == 1);  // no fade the first time
+  CHECK(TextScrollAt(1.0, 30, 10).alpha == 1);
   CHECK(TextScrollAt(4.0, 30, 10).offset == Catch::Approx(15));
   CHECK(TextScrollAt(6.5, 30, 10).offset == 30);
   CHECK(TextScrollAt(6.5, 30, 10).alpha == 1);
@@ -693,6 +676,6 @@ TEST_CASE("Text taller than its box scrolls, holds and fades back to the top", "
   const double cycle = 2.5 + 3 + 2 + 0.6;
   CHECK(TextScrollAt(cycle + 0.3, 30, 10).offset == 0);
   CHECK(TextScrollAt(cycle + 0.3, 30, 10).alpha == Catch::Approx(0.5).margin(0.01));
-  // Text that fits never moves.
+
   CHECK(TextScrollAt(5.0, 0, 10).offset == 0);
 }

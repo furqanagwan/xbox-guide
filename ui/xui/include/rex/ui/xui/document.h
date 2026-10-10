@@ -31,18 +31,16 @@ struct Quat {
   bool operator==(const Quat&) const = default;
 };
 
-/// 0xAARRGGBB.
 struct Color {
   uint32_t argb = 0;
   bool operator==(const Color&) const = default;
 };
 
-/// A figure outline: cubic Bezier segments in the figure's own box.
 struct Path {
   struct Point {
-    float x, y;      // anchor
-    float c1x, c1y;  // control point before the anchor
-    float c2x, c2y;  // control point after the anchor
+    float x, y;
+    float c1x, c1y;
+    float c2x, c2y;
   };
   float width = 0.0f, height = 0.0f;
   std::vector<Point> points;
@@ -65,10 +63,9 @@ struct Value {
   }
 };
 
-/// An element's (or a compound property's) set properties.
 struct PropertyBag {
   struct Entry {
-    const PropDef* def = nullptr;  // nullptr: a property the schema does not know
+    const PropDef* def = nullptr;
     Value value;
   };
   std::vector<Entry> entries;
@@ -81,17 +78,14 @@ enum class Interpolation : uint8_t { kLinear, kNone, kEase };
 struct Keyframe {
   int32_t frame = 0;
   Interpolation interpolation = Interpolation::kLinear;
-  int8_t ease_in = 0;  // -100..100
+  int8_t ease_in = 0;
   int8_t ease_out = 0;
   uint8_t ease_scale = 0;
-  std::vector<Value> values;  // one per Timeline::props entry
+  std::vector<Value> values;
 };
 
-/// One animated property: a path through compound properties (Fill, then
-/// FillColor) ending at the animated one, and the array element for
-/// indexed properties.
 struct AnimatedProperty {
-  std::vector<const PropDef*> path;  // empty: not in the schema, ignored
+  std::vector<const PropDef*> path;
   int32_t index = -1;
 };
 
@@ -107,7 +101,7 @@ struct NamedFrame {
   std::string name;
   int32_t frame = 0;
   FrameCommand command = FrameCommand::kPlay;
-  std::string target;  // the named frame the GoTo commands jump to
+  std::string target;
 };
 
 struct Node {
@@ -115,19 +109,19 @@ struct Node {
   const ClassDef* cls = nullptr;
   std::shared_ptr<const PropertyBag> props;
   std::vector<Node> children;
-  std::vector<Timeline> timelines;  // animate this node's descendants
+  std::vector<Timeline> timelines;
   std::vector<NamedFrame> named_frames;
 
   const Value* Find(std::string_view name) const { return props ? props->Find(name) : nullptr; }
   std::string_view id() const;
-  /// Depth-first search of the descendants (not this node) by Id.
+
   const Node* FindById(std::string_view id) const;
 };
 
 struct Document {
-  Node root;  // an XuiCanvas
+  Node root;
 };
 
 std::optional<Document> ParseXur(std::span<const uint8_t> bytes, std::string* error);
 
-}  // namespace rex::ui::xui
+}

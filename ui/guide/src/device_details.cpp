@@ -40,7 +40,7 @@ void AddLine(std::string& text, std::string_view line) {
   text += line;
 }
 
-}  // namespace
+}
 
 std::string DescribeAudioOutput(const audio::AudioOutput& output) {
   std::string text;
@@ -144,4 +144,4 @@ std::string DescribeDisplay(const DisplayInfo& display) {
   return text;
 }
 
-}  // namespace rex::ui::guide
+}

@@ -44,7 +44,7 @@ std::string RowStatus(const AppUpdateState& state) {
   return {};
 }
 
-}  // namespace
+}
 
 void XboxGuide::OpenGameUpdate() {
   SettingsPage& page = PushPage(assets_->options_notifications, "Game Update");
@@ -83,9 +83,9 @@ void XboxGuide::OpenGameUpdate() {
     }
   };
   if (game_update_row_) {
-    SetFocus(game_update_row_, /*initial=*/true);
+    SetFocus(game_update_row_, true);
   }
-  CheckForAppUpdate(/*force=*/false);
+  CheckForAppUpdate(false);
   ShowGameUpdate();
 }
 
@@ -173,7 +173,7 @@ void XboxGuide::SelectGameUpdate() {
   switch (state.status) {
     case AppUpdateStatus::kUpToDate:
     case AppUpdateStatus::kFailed:
-      CheckForAppUpdate(/*force=*/true);
+      CheckForAppUpdate(true);
       break;
     case AppUpdateStatus::kAvailable:
       DownloadAppUpdate();
@@ -204,7 +204,7 @@ void XboxGuide::ApplyGameUpdateChoice() {
   }
   REXLOG_INFO("Xbox guide: {}; the game closes for the updater",
               rollback ? "going back to the previous version" : "installing the update");
-  BeginClose(/*exit_title=*/true);
+  BeginClose(true);
 }
 
-}  // namespace rex::ui::guide
+}

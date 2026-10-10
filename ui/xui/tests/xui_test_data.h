@@ -80,13 +80,12 @@ inline Bytes Xuis(const std::vector<std::string>& strings) {
   return out;
 }
 
-// An XEX2 whose image holds `resource` at load address + 0x100.
 inline Bytes XexWithResource(const std::string& resource_name, const Bytes& resource,
                              uint16_t compression, uint16_t encryption = 0) {
   const uint32_t load = 0x82000000;
   Bytes image(0x100, 0xCC);
   Append(image, resource);
-  image.resize(image.size() + 0x10, 0);  // the zero run basic compression leaves out
+  image.resize(image.size() + 0x10, 0);
 
   Bytes out;
   const uint32_t header_size = 0x400;
@@ -94,14 +93,14 @@ inline Bytes XexWithResource(const std::string& resource_name, const Bytes& reso
   Be32(out, 0);
   Be32(out, header_size);
   Be32(out, 0);
-  Be32(out, 0x200);  // security info
+  Be32(out, 0x200);
   Be32(out, 2);
   Be32(out, 0x2FF);
   Be32(out, 0x100);
   Be32(out, 0x3FF);
   Be32(out, 0x180);
   out.resize(0x100, 0);
-  Be32(out, 4 + 16);  // resource info
+  Be32(out, 4 + 16);
   std::string name = resource_name;
   name.resize(8, '\0');
   out.insert(out.end(), name.begin(), name.end());
@@ -109,7 +108,7 @@ inline Bytes XexWithResource(const std::string& resource_name, const Bytes& reso
   Be32(out, uint32_t(resource.size()));
   out.resize(0x180, 0);
   if (compression == 1) {
-    Be32(out, 16);  // file format info: one (data, zero) block
+    Be32(out, 16);
     Be16(out, encryption);
     Be16(out, 1);
     Be32(out, uint32_t(image.size() - 0x10));
@@ -133,4 +132,4 @@ inline Bytes XexWithResource(const std::string& resource_name, const Bytes& reso
   return out;
 }
 
-}  // namespace xui_test
+}

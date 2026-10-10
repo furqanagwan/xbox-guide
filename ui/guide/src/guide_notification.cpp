@@ -17,11 +17,10 @@ namespace {
 
 constexpr float kSceneWidth = 852.0f;
 constexpr float kSceneHeight = 480.0f;
-// The popup (460x87) sits centred above the bottom of the title-safe area.
+
 constexpr float kPopupX = (kSceneWidth - 460.0f) / 2.0f;
 constexpr float kPopupY = 350.0f;
 
-// XamStrings: "Achievement unlocked\n%sG - %s" (with a literal \n).
 std::string UnlockText(const std::vector<std::string>& xam_strings,
                        const system::AchievementEvent& event) {
   std::string format =
@@ -41,7 +40,7 @@ std::string UnlockText(const std::vector<std::string>& xam_strings,
   return format;
 }
 
-}  // namespace
+}
 
 GuideNotificationDialog::GuideNotificationDialog(
     ImGuiDrawer* drawer, MediaSource source, GuideFonts fonts,
@@ -60,7 +59,6 @@ GuideNotificationDialog::GuideNotificationDialog(
 GuideNotificationDialog::~GuideNotificationDialog() = default;
 
 void GuideNotificationDialog::Push(const system::AchievementEvent& event) {
-  // Preferences > Notifications > Show Notifications.
   if (!REXCVAR_GET(notifications_show)) {
     return;
   }
@@ -86,8 +84,7 @@ void GuideNotificationDialog::Start(const system::AchievementEvent& event, const
   }
   popup_->SetText(UnlockText(assets_->xam_strings, event));
   popup_->Set("ImagePath", xui::Value{std::string("xam://Achievement.png")});
-  // TransTo brings it in and holds it; the playhead runs on through
-  // TransFrom, which takes it away, and stops at EndTransFrom.
+
   popup_->Play("TransTo");
   last_tick_ = started_ = std::chrono::steady_clock::now();
 }
@@ -107,7 +104,6 @@ void GuideNotificationDialog::OnDraw(ImGuiIO& io) {
     }
     Media media = source_ ? source_() : Media{};
     if (media.unavailable || (media.assets && !media.assets->has_notify)) {
-      // No system update: the SDK's own toast shows it.
       std::lock_guard<std::mutex> lock(mutex_);
       if (fallback_) {
         for (const auto& event : queue_) {
@@ -118,7 +114,7 @@ void GuideNotificationDialog::OnDraw(ImGuiIO& io) {
       return;
     }
     if (!media.assets || !media.media) {
-      return;  // still loading
+      return;
     }
     {
       std::lock_guard<std::mutex> lock(mutex_);
@@ -133,8 +129,7 @@ void GuideNotificationDialog::OnDraw(ImGuiIO& io) {
   const double seconds = std::chrono::duration<double>(now - last_tick_).count();
   last_tick_ = now;
   scene_->Advance(std::min(seconds, 0.25) * xui::kFramesPerSecond);
-  // TransTo ends in a go-to that can hold the popup on screen; the console
-  // takes it away after a few seconds with TransFrom.
+
   constexpr double kHoldSeconds = 4.0;
   constexpr double kTransFromFrame = 186.0;
   if (popup_->frame() < kTransFromFrame &&
@@ -154,4 +149,4 @@ void GuideNotificationDialog::OnDraw(ImGuiIO& io) {
   }
 }
 
-}  // namespace rex::ui::guide
+}

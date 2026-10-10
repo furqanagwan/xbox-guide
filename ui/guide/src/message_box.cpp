@@ -69,4 +69,4 @@ std::optional<size_t> MessageBoxScene::Activate() {
   choice->Press();
   return choice->enabled() ? std::optional(focused_) : std::nullopt;
 }
-}  // namespace rex::ui::guide
+}

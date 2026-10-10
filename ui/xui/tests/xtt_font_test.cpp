@@ -43,7 +43,6 @@ uint16_t Be16(const Bytes& b, size_t at) {
   return uint16_t(b[at] << 8 | b[at + 1]);
 }
 
-// zlib with one stored (uncompressed) deflate block.
 Bytes Zlib(const Bytes& data) {
   Bytes out = {0x78, 0x01, 0x01};
   out.push_back(uint8_t(data.size()));
@@ -60,7 +59,6 @@ Bytes Zlib(const Bytes& data) {
   return out;
 }
 
-// A simple glyph: one contour of `points` on-curve points.
 Bytes Glyph(uint16_t points) {
   Bytes g;
   Put16(g, 1);
@@ -68,9 +66,9 @@ Bytes Glyph(uint16_t points) {
     Put16(g, uint16_t(v));
   }
   Put16(g, uint16_t(points - 1));
-  Put16(g, 0);  // no instructions
+  Put16(g, 0);
   for (uint16_t i = 0; i < points; ++i) {
-    g.push_back(0x01 | 0x02 | 0x04);  // on curve, short x and y
+    g.push_back(0x01 | 0x02 | 0x04);
   }
   for (int i = 0; i < 2 * points; ++i) {
     g.push_back(10);
@@ -78,8 +76,6 @@ Bytes Glyph(uint16_t points) {
   return g;
 }
 
-// An XTT font of three glyphs; glyphs 0 and 1 share the first block and
-// glyph 2 starts the second, as the console's fonts are laid out.
 Bytes MakeXtt() {
   const Bytes g0 = Glyph(3), g1 = Glyph(4), g2 = Glyph(5);
   Bytes block0 = g0;
@@ -99,16 +95,15 @@ Bytes MakeXtt() {
   Bytes head(54, 0);
   head[0] = 0x00;
   head[1] = 0x01;
-  head[18] = 0x08;  // unitsPerEm 2048
+  head[18] = 0x08;
   Bytes hhea(36, 0);
   hhea[1] = 0x01;
-  hhea[4] = 0x08;  // ascender 2048
-  hhea[35] = 3;    // numberOfHMetrics
+  hhea[4] = 0x08;
+  hhea[35] = 3;
   Bytes hmtx(12, 0);
   Bytes cmap = {0, 0, 0, 0};
   Bytes name = {0, 0, 0, 0, 0, 6};
 
-  // The directory: tables after it, xglf at its place in the file.
   std::map<std::string, Bytes> tables = {{"cmap", cmap}, {"head", head}, {"hhea", hhea},
                                          {"hmtx", hmtx}, {"name", name}, {"xloc", xloc}};
   const uint16_t count = uint16_t(tables.size() + 1);
@@ -156,7 +151,7 @@ std::map<std::string, std::pair<uint32_t, uint32_t>> Tables(const Bytes& font) {
   return tables;
 }
 
-}  // namespace
+}
 
 TEST_CASE("XTT fonts convert to TrueType", "[xui][xtt]") {
   std::string error;
@@ -172,7 +167,6 @@ TEST_CASE("XTT fonts convert to TrueType", "[xui][xtt]") {
   }
   CHECK_FALSE(tables.contains("xglf"));
 
-  // loca (32-bit, as head says) places the glyphs back to back, each aligned.
   const auto [head_at, head_size] = tables.at("head");
   CHECK(Be16(*font, head_at + 50) == 1);
   const auto [loca_at, loca_size] = tables.at("loca");
@@ -181,14 +175,13 @@ TEST_CASE("XTT fonts convert to TrueType", "[xui][xtt]") {
   const uint32_t g1 = Be32(*font, loca_at + 4), g2 = Be32(*font, loca_at + 8);
   CHECK(Be32(*font, loca_at) == 0);
   CHECK(Be32(*font, loca_at + 12) == glyf_size);
-  CHECK(Be16(*font, glyf_at + g2 + 10) == 4);  // glyph 2's last point: 5 points
-  CHECK(Be16(*font, glyf_at + g1 + 10) == 3);  // glyph 1: 4 points
+  CHECK(Be16(*font, glyf_at + g2 + 10) == 4);
+  CHECK(Be16(*font, glyf_at + g1 + 10) == 3);
 
   const auto [maxp_at, maxp_size] = tables.at("maxp");
-  CHECK(Be16(*font, maxp_at + 4) == 3);  // numGlyphs
-  CHECK(Be16(*font, maxp_at + 6) == 5);  // maxPoints
+  CHECK(Be16(*font, maxp_at + 4) == 3);
+  CHECK(Be16(*font, maxp_at + 6) == 5);
 
-  // The whole font sums to the magic number once head is adjusted.
   uint32_t sum = 0;
   for (size_t i = 0; i < font->size(); i += 4) {
     sum += Be32(*font, i);
@@ -202,7 +195,7 @@ TEST_CASE("Damaged XTT fonts are rejected", "[xui][xtt]") {
   CHECK(error == "not an XTT font");
 
   Bytes truncated = MakeXtt();
-  truncated.resize(0x1000 + 100);  // the glyph blocks are cut off
+  truncated.resize(0x1000 + 100);
   CHECK_FALSE(XttToTrueType(truncated, &error));
   CHECK(error.find("xglf") != std::string::npos);
 }
@@ -221,8 +214,6 @@ TEST_CASE("System fonts travel in the guide bundle", "[xui][xtt]") {
 }
 
 TEST_CASE("The console's own fonts convert", "[xui][xtt]") {
-  // An Xbox PC backward-compatibility game's Content/Flash folder and/or the
-  // console's $SystemUpdate (never in the repository).
   std::vector<std::filesystem::path> sources;
   for (const char* name : {"REXGLUE_GUIDE_FLASH", "REXGLUE_SYSTEM_UPDATE"}) {
     if (const char* path = std::getenv(name); path && *path) {

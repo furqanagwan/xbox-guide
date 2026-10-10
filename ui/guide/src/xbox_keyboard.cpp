@@ -34,17 +34,15 @@ namespace {
 
 constexpr float kSceneWidth = 852.0f;
 constexpr float kSceneHeight = 480.0f;
-// The title behind is darkened as for the guide, over the backdrop's
-// ClosedToFull and FullToClosed.
+
 constexpr float kDimOpacity = 0.75f;
 constexpr double kDimInSeconds = 23 / xui::kFramesPerSecond;
 constexpr double kDimOutSeconds = 16 / xui::kFramesPerSecond;
 
-// The side columns, top to bottom, each key two rows tall.
 constexpr const char* kLeftColumn[] = {"Key.Left", "Key.Prev", "Key.Caps"};
 constexpr const char* kRightColumn[] = {"Key.Right", "Key.Next", "Key.OK"};
 
-}  // namespace
+}
 
 XboxKeyboard::XboxKeyboard(ImGuiDrawer* drawer, std::shared_ptr<const GuideAssets> assets,
                            GuideMedia* media, GuideFonts fonts, input::InputSystem* input,
@@ -57,8 +55,6 @@ XboxKeyboard::XboxKeyboard(ImGuiDrawer* drawer, std::shared_ptr<const GuideAsset
       user_index_(user_index),
       done_(std::move(done)),
       keyboard_(std::move(request.default_text), request.max_length) {
-  // Buttons already held (the A that opened the title's prompt) wait for
-  // their release.
   uint16_t held = 0;
   if (input_) {
     input::X_INPUT_STATE state = {};
@@ -94,15 +90,13 @@ XboxKeyboard::XboxKeyboard(ImGuiDrawer* drawer, std::shared_ptr<const GuideAsset
   xui::Element* placeholder = main->FindById("KeyboardPlaceholder");
   xui::Element* base = placeholder->AttachScene(SceneNode(assets_->keyboard_base), vk_context_);
 
-  // The title and description the title passed.
   if (xui::Element* header = main->FindById("Text_Header")) {
     header->SetText(rex::string::to_utf8(request.title));
   }
   if (xui::Element* description = base->FindById("XuiText1")) {
     description->SetText(rex::string::to_utf8(request.description));
   }
-  // The Latin keyboard: the Japanese keys, conversion candidates and kana
-  // mode are for the Japanese one.
+
   for (const char* id : {"KeysGroupJP", "CandidateListGroup", "KanaModeRomaji", "KanaModeKana",
                          "FormattedText", "XuiText2"}) {
     if (xui::Element* e = base->FindById(id)) {
@@ -116,7 +110,7 @@ XboxKeyboard::XboxKeyboard(ImGuiDrawer* drawer, std::shared_ptr<const GuideAsset
       e->Suppress();
     }
   }
-  // The side keys' pictures (vk's own) and words.
+
   struct SideKey {
     const char* id;
     const char* image;
@@ -135,7 +129,7 @@ XboxKeyboard::XboxKeyboard(ImGuiDrawer* drawer, std::shared_ptr<const GuideAsset
       e->SetText(text);
     }
   }
-  // The legends, as the console shows them under the keyboard.
+
   auto legend = [&](const char* button, const char* label, const char* text) {
     xui::Element* glyph = backdrop_->FindById(button);
     xui::Element* words = backdrop_->FindById(label);
@@ -152,8 +146,8 @@ XboxKeyboard::XboxKeyboard(ImGuiDrawer* drawer, std::shared_ptr<const GuideAsset
   legend("YButton", "YText", "");
 
   Refresh();
-  spot_ = {1, 0};  // q, as the console starts on the first letter
-  Focus(/*initial=*/true);
+  spot_ = {1, 0};
+  Focus(true);
 
   hud_root_->Play("ClosedToFull");
   last_tick_ = opened_ = std::chrono::steady_clock::now();
@@ -176,13 +170,12 @@ xui::Element* XboxKeyboard::ElementAt(Spot spot) const {
 }
 
 void XboxKeyboard::Move(int rows, int columns) {
-  // Across: the side columns are one more column each end; it wraps.
   constexpr int kWide = VirtualKeyboard::kColumns + 2;
   xui::Element* from = ElementAt(spot_);
   do {
     spot_.column = (spot_.column + 1 + columns + kWide) % kWide - 1;
     spot_.row = (spot_.row + rows + 6) % 6;
-    // Keep moving over the cells of a wide or tall key.
+
   } while (ElementAt(spot_) == from && (rows || columns));
   Focus();
 }
@@ -215,8 +208,7 @@ void XboxKeyboard::Refresh() {
     return;
   }
   edit_->SetText(rex::string::to_utf8(keyboard_.text()));
-  // The edit visual's own caret (scr_Edit: its text at x 6, the caret 4
-  // further in when empty) after the characters before the cursor.
+
   if (xui::Element* caret = edit_->FindById("Caret"); caret && fonts_.regular) {
     xui::Element* text = edit_->FindById("Text");
     const float size =
@@ -251,7 +243,7 @@ void XboxKeyboard::Activate() {
   } else if (id == "Key.Caps") {
     keyboard_.ToggleCaps();
   } else if (id == "Key.OK") {
-    Finish(/*accepted=*/true);
+    Finish(true);
     return;
   } else {
     keyboard_.Type(spot_.row, spot_.column);
@@ -277,7 +269,7 @@ void XboxKeyboard::Handle(GuideAction action) {
       Activate();
       break;
     case GuideAction::kB:
-      Finish(/*accepted=*/false);
+      Finish(false);
       break;
     case GuideAction::kX:
       keyboard_.Backspace();
@@ -308,7 +300,7 @@ void XboxKeyboard::Handle(GuideAction action) {
       Refresh();
       break;
     case GuideAction::kStart:
-      Finish(/*accepted=*/true);
+      Finish(true);
       break;
   }
 }
@@ -328,8 +320,6 @@ void XboxKeyboard::OnDraw(ImGuiIO& io) {
   const double seconds = std::chrono::duration<double>(now - last_tick_).count();
   last_tick_ = now;
 
-  // Not on the first frame: a press that opened the keyboard still reads as
-  // pressed in it.
   if (!keys_armed_) {
     keys_armed_ = !first_frame_;
     first_frame_ = false;
@@ -344,15 +334,14 @@ void XboxKeyboard::OnDraw(ImGuiIO& io) {
   }
   if (!closing_) {
     std::vector<GuideAction> actions;
-    // A PC keyboard types into the field; Enter is Done, Escape cancels and
-    // the arrows move over the keys.
+
     bool typed = false;
     for (ImWchar c : keys_armed_ ? io.InputQueueCharacters : ImVector<ImWchar>()) {
       if (c >= 0x20 && c != 0x7F && c <= 0xFFFF) {
         typed |= keyboard_.Insert(char16_t(c));
       }
     }
-    if (keys_armed_ && ImGui::IsKeyPressed(ImGuiKey_Backspace, /*repeat=*/true)) {
+    if (keys_armed_ && ImGui::IsKeyPressed(ImGuiKey_Backspace, true)) {
       typed |= keyboard_.Backspace();
     }
     if (typed) {
@@ -367,7 +356,7 @@ void XboxKeyboard::OnDraw(ImGuiIO& io) {
           Key{ImGuiKey_LeftArrow, GuideAction::kLeft},
           Key{ImGuiKey_RightArrow, GuideAction::kRight}, Key{ImGuiKey_Enter, GuideAction::kStart},
           Key{ImGuiKey_Escape, GuideAction::kB}}) {
-      if (keys_armed_ && ImGui::IsKeyPressed(key.key, /*repeat=*/true)) {
+      if (keys_armed_ && ImGui::IsKeyPressed(key.key, true)) {
         actions.push_back(key.action);
       }
     }
@@ -391,9 +380,8 @@ void XboxKeyboard::OnDraw(ImGuiIO& io) {
     }
   }
 
-  // Typed characters arrive while text input is on, as for an ImGui text box.
   GImGui->PlatformImeData.WantTextInput = !closing_;
-  // The caret blinks, shown again on each edit.
+
   if (xui::Element* caret = edit_ ? edit_->FindById("Caret") : nullptr) {
     const double since = std::chrono::duration<double>(now - caret_shown_at_).count();
     caret->SetVisible(std::fmod(since, 1.0) < 0.5);
@@ -421,4 +409,4 @@ void XboxKeyboard::OnClose() {
   }
 }
 
-}  // namespace rex::ui::guide
+}

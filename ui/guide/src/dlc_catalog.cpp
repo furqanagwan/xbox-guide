@@ -17,7 +17,7 @@ namespace rex::ui::guide {
 namespace {
 
 constexpr std::string_view kMagic = "RXDLC001";
-// Far beyond any title's add-ons; guards a corrupt count.
+
 constexpr uint32_t kMaxEntries = 4096;
 
 void PutU32(std::vector<uint8_t>& out, uint32_t value) {
@@ -61,7 +61,7 @@ struct Reader {
 
 std::span<const uint8_t> g_embedded;
 
-}  // namespace
+}
 
 std::vector<uint8_t> WriteDlcCatalog(const std::vector<DlcCatalogEntry>& entries) {
   std::vector<uint8_t> out(kMagic.begin(), kMagic.end());
@@ -126,4 +126,4 @@ const DlcCatalogEntry* FindEmbeddedDlc(std::string_view id) {
   return nullptr;
 }
 
-}  // namespace rex::ui::guide
+}

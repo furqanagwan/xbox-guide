@@ -17,10 +17,9 @@ using namespace rex::input;
 
 constexpr uint16_t kChordButtons = X_INPUT_GAMEPAD_BACK | X_INPUT_GAMEPAD_START;
 
-}  // namespace
+}
 
 bool GuideChord::Update(uint16_t buttons) {
-  // The Xbox button is not part of it: on PC it opens Game Bar.
   const bool chord = (buttons & kChordButtons) == kChordButtons;
   if (!(buttons & kChordButtons)) {
     latched_ = false;
@@ -62,8 +61,7 @@ std::vector<GuideAction> GuidePad::Update(uint16_t buttons, int16_t thumb_lx, in
       actions.push_back(press.action);
     }
   }
-  // A trigger fires once as it passes half way; one held at open waits for
-  // its release, as buttons do.
+
   auto trigger = [&](uint8_t value, bool& was_down, GuideAction action) {
     const bool down = value >= kTriggerThreshold;
     if (down && !was_down) {
@@ -74,7 +72,6 @@ std::vector<GuideAction> GuidePad::Update(uint16_t buttons, int16_t thumb_lx, in
   trigger(left_trigger, left_trigger_, GuideAction::kLeftTrigger);
   trigger(right_trigger, right_trigger_, GuideAction::kRightTrigger);
 
-  // One held direction at a time, the D-pad before the stick.
   int direction = -1;
   if (held & X_INPUT_GAMEPAD_DPAD_UP) {
     direction = int(GuideAction::kUp);
@@ -106,4 +103,4 @@ std::vector<GuideAction> GuidePad::Update(uint16_t buttons, int16_t thumb_lx, in
   return actions;
 }
 
-}  // namespace rex::ui::guide
+}

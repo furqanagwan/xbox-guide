@@ -13,14 +13,11 @@
 #include <cmath>
 #include <limits>
 
-
 namespace rex::ui::xui {
 namespace {
 
-// XuiElement's defaults for properties a scene leaves out.
 constexpr float kDefaultWidth = 60.0f;
 constexpr float kDefaultHeight = 30.0f;
-
 
 float Lerp(float a, float b, float t) {
   return a + (b - a) * t;
@@ -55,7 +52,6 @@ Value Interpolate(const Value& a, const Value& b, float t) {
   }
   if (const Quat* qa = a.get<Quat>()) {
     if (const Quat* qb = b.get<Quat>()) {
-      // Normalized lerp along the shorter arc.
       const float dot = qa->x * qb->x + qa->y * qb->y + qa->z * qb->z + qa->w * qb->w;
       const float sign = dot < 0.0f ? -1.0f : 1.0f;
       Quat q{Lerp(qa->x, sign * qb->x, t), Lerp(qa->y, sign * qb->y, t),
@@ -67,12 +63,10 @@ Value Interpolate(const Value& a, const Value& b, float t) {
       return Value{q};
     }
   }
-  // Bools, integers and strings hold until the next keyframe.
+
   return a;
 }
 
-// A property's value at `frame`: the keyframe at or before it, interpolated
-// toward the next by the earlier keyframe's mode.
 const Value* Evaluate(const Timeline& timeline, size_t prop, double frame, Value& scratch) {
   const std::vector<Keyframe>& keys = timeline.keyframes;
   if (keys.empty()) {
@@ -95,12 +89,9 @@ const Value* Evaluate(const Timeline& timeline, size_t prop, double frame, Value
   return &scratch;
 }
 
-}  // namespace
-
+}
 
 float EaseProgress(float t, int8_t ease_in, int8_t ease_out) {
-  // A cubic whose inner control values follow the ease settings: 0/0 is
-  // linear, a negative ease-in starts fast, a positive ease-out ends slow.
   const float p1 = (1.0f - float(ease_in) / 100.0f) / 3.0f;
   const float p2 = 1.0f - (1.0f - float(ease_out) / 100.0f) / 3.0f;
   const float u = 1.0f - t;
@@ -131,8 +122,7 @@ std::unique_ptr<Element> Element::Create(const Node& node, const SceneContext& c
 void Element::Build(const Node& node) {
   const float own_width = GetFloat("Width", kDefaultWidth);
   const float own_height = GetFloat("Height", kDefaultHeight);
-  // Controls take their visual's elements and timelines from the skin: the
-  // named Visual, or the one named after the class.
+
   if (IsA("XuiControl") && context_->skin) {
     std::string_view visual_name = GetString("Visual");
     if (visual_name.empty()) {
@@ -154,9 +144,9 @@ void Element::Build(const Node& node) {
   }
   AddTimelines(node);
   ApplyFrame(0.0);
-  // Controls rest in their visual's Normal state, as XUI starts them.
+
   if (IsA("XuiControl") && HasNamedFrame("Normal")) {
-    Play("Normal", /*sounds=*/false);
+    Play("Normal", false);
     Advance(1.0);
     playing_ = false;
   }
@@ -370,7 +360,6 @@ void Element::Set(std::string_view name, Value value) {
 
 namespace {
 
-// Returns a copy of `bag` with the value at `path` (and array `index`) replaced.
 std::shared_ptr<const PropertyBag> ReplaceInBag(const PropertyBag* bag,
                                                 std::span<const PropDef* const> path, int32_t index,
                                                 const Value& value) {
@@ -404,7 +393,7 @@ std::shared_ptr<const PropertyBag> ReplaceInBag(const PropertyBag* bag,
   return copy;
 }
 
-}  // namespace
+}
 
 void Element::SetPath(std::span<const PropDef* const> path, int32_t index, const Value& value) {
   if (path.empty()) {
@@ -420,7 +409,7 @@ void Element::SetPath(std::span<const PropDef* const> path, int32_t index, const
     props_.entries.push_back({path[0], value});
     return;
   }
-  // Compound or indexed: replace a copy, since bags are shared with the scene.
+
   PropertyBag holder;
   holder.entries = props_.entries;
   auto updated = ReplaceInBag(&holder, path, index, value);
@@ -508,7 +497,7 @@ bool Element::Play(std::string_view name, bool sounds) {
           frame.command != FrameCommand::kStop && frame.command != FrameCommand::kGoToAndStop;
       ApplyFrame(frame_);
       if (sounds) {
-        FireSounds(frame_, frame_, /*inclusive=*/true);
+        FireSounds(frame_, frame_, true);
       }
       return true;
     }
@@ -526,7 +515,7 @@ void Element::Advance(double frames) {
   if (playing_ && frames > 0.0) {
     const double from = frame_;
     double to = from + frames;
-    // The first command the playhead crosses decides where it ends up.
+
     const NamedFrame* hit = nullptr;
     double last_frame = 0.0;
     for (const TimelineSet& set : timeline_sets_) {
@@ -549,7 +538,7 @@ void Element::Advance(double frames) {
       to = last_frame;
       playing_ = false;
     }
-    FireSounds(from, to, /*inclusive=*/false);
+    FireSounds(from, to, false);
     frame_ = to;
     if (hit) {
       switch (hit->command) {
@@ -587,7 +576,7 @@ void Element::ApplyFrame(double frame) {
       for (size_t p = 0; p < timeline.props.size(); ++p) {
         const AnimatedProperty& prop = timeline.props[p];
         if (prop.path.empty() || prop.path.back()->name == "File") {
-          continue;  // unknown to the schema, or a sound cue
+          continue;
         }
         if (const Value* value = Evaluate(timeline, p, frame, scratch)) {
           target->SetPath(prop.path, prop.index, *value);
@@ -622,12 +611,11 @@ void Element::FireSounds(double from, double to, bool inclusive) {
 }
 
 bool Element::focusable() const {
-  // Labels are controls in the class tree but never take focus.
   return IsA("XuiControl") && !IsA("XuiScene") && !IsA("XuiLabel") && visible();
 }
 
 void Element::Press() {
-  PlayState("Press", /*sounds=*/true);
+  PlayState("Press", true);
 }
 
 bool Element::PlayState(std::string_view base, bool sounds) {
@@ -645,7 +633,7 @@ bool Element::PlayState(std::string_view base, bool sounds) {
 
 void Element::SetChecked(bool checked) {
   checked_ = checked;
-  PlayState(focused_ ? "Focus" : "Normal", /*sounds=*/false);
+  PlayState(focused_ ? "Focus" : "Normal", false);
 }
 
 Element* Element::Navigate(NavDirection direction) {
@@ -657,7 +645,7 @@ Element* Element::Navigate(NavDirection direction) {
   if (!scene) {
     return nullptr;
   }
-  // Hidden or disabled controls pass navigation on in the same direction.
+
   Element* at = this;
   for (int hops = 0; hops < 64; ++hops) {
     const std::string_view target = at->GetString(kNames[int(direction)]);
@@ -679,18 +667,17 @@ Element* Element::Navigate(NavDirection direction) {
 void Element::MoveFocus(Element* from, Element* to, bool initial) {
   if (from && from != to) {
     from->focused_ = false;
-    // Checked or disabled controls have no KillFocus variant: they go
-    // straight back to their resting state.
+
     if (from->checked_ || !from->enabled() || !from->Play("KillFocus")) {
-      from->PlayState("Normal", /*sounds=*/false);
+      from->PlayState("Normal", false);
     }
   }
   if (to) {
     to->focused_ = true;
-    if (!(initial && to->PlayState("InitFocus", /*sounds=*/true))) {
-      to->PlayState("Focus", /*sounds=*/true);
+    if (!(initial && to->PlayState("InitFocus", true))) {
+      to->PlayState("Focus", true);
     }
   }
 }
 
-}  // namespace rex::ui::xui
+}
